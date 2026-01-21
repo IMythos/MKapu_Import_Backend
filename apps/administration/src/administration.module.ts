@@ -34,7 +34,7 @@ import { SedeOrmEntity } from './core/headquarters/infrastructure/entity/sede-or
       inject: [ConfigService],
     }),
 
-    // Módulos de tu aplicación
+    // Módulos del microservicio
     UserModule,
   ],
   controllers: [AdministrationController],
