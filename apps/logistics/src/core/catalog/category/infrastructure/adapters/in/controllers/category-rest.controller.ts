@@ -16,7 +16,10 @@ import {
   Get,
   Query,
 } from '@nestjs/common';
-import { ICategoryCommandPort, ICategoryQueryPort } from '../../../../domain/ports/in/category-ports-in';
+import {
+  ICategoryCommandPort,
+  ICategoryQueryPort,
+} from '../../../../domain/ports/in/category-ports-in';
 import {
   ChangeCategoryStatusDto,
   ListCategoryFilterDto,

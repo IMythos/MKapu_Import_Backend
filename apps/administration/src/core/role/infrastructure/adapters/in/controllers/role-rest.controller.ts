@@ -1,12 +1,3 @@
-/* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-
-/* ============================================
-   administration/src/core/role/infrastructure/controllers/role-rest.controller.ts
-   ============================================ */
-
 import {
   Controller,
   Post,
@@ -18,6 +9,7 @@ import {
   HttpStatus,
   ParseIntPipe,
   Inject,
+  UseGuards,
 } from '@nestjs/common';
 import { IRoleCommandPort } from '../../../../domain/ports/in/role-port-in';
 import {
@@ -29,7 +21,11 @@ import {
   RoleResponseDto,
   RoleDeletedResponseDto,
 } from '../../../../application/dto/out';
+import { Roles } from 'libs/common/src/infrastructure/decorators/roles.decorators';
+import { RoleGuard } from 'libs/common/src/infrastructure/guard/roles.guard';
 @Controller('roles')
+@UseGuards(RoleGuard)
+@Roles('Administrador')
 export class RoleRestController {
   constructor(
     @Inject('IRoleCommandPort')

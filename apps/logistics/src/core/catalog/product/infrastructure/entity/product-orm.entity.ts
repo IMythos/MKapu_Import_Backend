@@ -1,6 +1,5 @@
 import {
   Entity,
-  PrimaryColumn,
   Column,
   ManyToOne,
   JoinColumn,
@@ -11,11 +10,8 @@ import { BitToBooleanTransformer } from 'libs/common/src';
 
 @Entity({ name: 'producto', schema: 'mkp_logistica' })
 export class ProductOrmEntity {
-
-
   @PrimaryGeneratedColumn({ name: 'id_producto', type: 'int' })
   id_producto: number;
-  
 
   @ManyToOne(() => CategoryOrmEntity, { eager: false })
   @JoinColumn({ name: 'id_categoria' })

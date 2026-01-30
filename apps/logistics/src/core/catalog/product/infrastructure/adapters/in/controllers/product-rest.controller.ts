@@ -75,7 +75,9 @@ export class ProductRestController {
   }
 
   @Get('category/:id_categoria')
-  async getByCategory(@Param('id_categoria', ParseIntPipe) id_categoria: number) {
+  async getByCategory(
+    @Param('id_categoria', ParseIntPipe) id_categoria: number,
+  ) {
     return this.queryService.getProductsByCategory(id_categoria);
   }
 }

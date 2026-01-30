@@ -53,7 +53,6 @@ export class TransferCommandService implements TransferPortsIn {
     if (foundUnits.length !== allSeries.length) {
       throw new NotFoundException('Algunas series no existen.');
     }
-
     const invalidUnits = foundUnits.filter(
       (u) =>
         u.status !== UnitStatus.AVAILABLE ||
@@ -96,7 +95,6 @@ export class TransferCommandService implements TransferPortsIn {
     return savedTransfer;
   }
 
-  // CORREGIDO: Acepta userId
   async approveTransfer(transferId: number, userId: number): Promise<Transfer> {
     const transfer = await this.transferRepo.findById(transferId);
 
@@ -139,8 +137,6 @@ export class TransferCommandService implements TransferPortsIn {
 
     const allSeries = transfer.items.flatMap((i) => i.series);
 
-    // CORREGIDO: Solo desbloqueamos (ponemos AVAILABLE).
-    // NO movemos la ubicación ni registramos ingreso, porque nunca salió.
     await Promise.all(
       allSeries.map((serie) =>
         this.unitRepo.updateStatusBySerial(serie, UnitStatus.AVAILABLE),
@@ -154,11 +150,9 @@ export class TransferCommandService implements TransferPortsIn {
       status: TransferStatus.REJECTED,
       reason,
     });
-
     return savedTransfer;
   }
 
-  // CORREGIDO: Acepta userId
   async confirmReceipt(transferId: number, userId: number): Promise<Transfer> {
     const transfer = await this.transferRepo.findById(transferId);
     if (!transfer) throw new NotFoundException('Transferencia no encontrada');
@@ -167,7 +161,6 @@ export class TransferCommandService implements TransferPortsIn {
 
     const allSeries = transfer.items.flatMap((i) => i.series);
 
-    // 2. MOVER UNIDADES Y PONER DISPONIBLES
     await Promise.all(
       allSeries.map((serie) =>
         this.unitRepo.updateLocationAndStatusBySerial(
@@ -177,8 +170,15 @@ export class TransferCommandService implements TransferPortsIn {
         ),
       ),
     );
+    for (const item of transfer.items) {
+      await this.increaseStock(
+        transfer.destinationWarehouseId,
+        transfer.destinationHeadquartersId,
+        item.productId,
+        item.quantity,
+      );
+    }
 
-    // 3. REGISTRAR INGRESO (Kardex) - MOVIDO AQUÍ (Estaba en reject por error)
     await this.inventoryService.registerIncome({
       refId: transfer.id!,
       refTable: 'transferencia',
@@ -223,5 +223,53 @@ export class TransferCommandService implements TransferPortsIn {
         );
       }
     }
+  }
+  private async decreaseStock(
+    warehouseId: number,
+    productId: number,
+    amount: number,
+  ): Promise<void> {
+    const stockRecord = await this.stockRepo.findOne({
+      where: { id_almacen: warehouseId, id_producto: productId },
+    });
+
+    if (!stockRecord) {
+      throw new BadRequestException(
+        `Inconsistencia: No existe registro de stock para el producto ${productId} en el almacén de origen.`,
+      );
+    }
+
+    if (stockRecord.cantidad < amount) {
+      throw new BadRequestException(
+        `Stock insuficiente en origen para el producto ${productId}. (Disponible: ${stockRecord.cantidad}, Requerido: ${amount})`,
+      );
+    }
+
+    stockRecord.cantidad -= amount;
+    await this.stockRepo.save(stockRecord);
+  }
+  private async increaseStock(
+    warehouseId: number,
+    headquartersId: string,
+    productId: number,
+    amount: number,
+  ): Promise<void> {
+    let stockRecord = await this.stockRepo.findOne({
+      where: { id_almacen: warehouseId, id_producto: productId },
+    });
+
+    if (!stockRecord) {
+      stockRecord = this.stockRepo.create({
+        id_almacen: warehouseId,
+        id_producto: productId,
+        id_sede: headquartersId,
+        cantidad: 0,
+        tipo_ubicacion: 'SIN_ASIGNAR',
+        estado: 'DISPONIBLE',
+      });
+    }
+
+    stockRecord.cantidad += amount;
+    await this.stockRepo.save(stockRecord);
   }
 }

@@ -52,6 +52,7 @@ async function bootstrap() {
       target: `${logisticsUrl}`,
       changeOrigin: true,
       pathRewrite: { '^/logistics': '' },
+      ws:true,
     }),
   );
 
