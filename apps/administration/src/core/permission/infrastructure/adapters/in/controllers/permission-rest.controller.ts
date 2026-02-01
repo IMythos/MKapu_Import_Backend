@@ -11,6 +11,7 @@ import {
   Inject,
   Get,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   IPermissionCommandPort,
@@ -28,8 +29,11 @@ import {
   PermissionListResponse,
   PermissionResponseDto,
 } from '../../../../application/dto/out';
+import { RoleGuard, Roles } from 'libs/common/src';
 
 @Controller('permissions')
+@UseGuards(RoleGuard)
+@Roles('Administrador')
 export class PermissionRestController {
   constructor(
     @Inject('IPermissionQueryPort')
@@ -89,11 +93,11 @@ export class PermissionRestController {
   async deletePermission(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<PermissionDeletedResponseDto> {
-    const deletedPermission = await this.permissionCommandService.deletePermission(id);
+    const deletedPermission =
+      await this.permissionCommandService.deletePermission(id);
     this.permissionGateway.notifyPermissionDeleted(id);
     return deletedPermission;
   }
-
   @Get(':id')
   async getPermission(@Param('id', ParseIntPipe) id: number) {
     return this.permissionQueryService.getPermissionById(id);

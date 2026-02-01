@@ -14,4 +14,3 @@ export class CreateSaleDto {
     headquartersId: string;
   }[];
 }
-

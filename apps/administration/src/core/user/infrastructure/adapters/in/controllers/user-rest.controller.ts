@@ -16,13 +16,18 @@ import {
   Inject,
   Get,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { IUserCommandPort, IUserQueryPort } from '../../../../domain/ports/in/user-port-in';
 import { UserWebSocketGateway } from '../../out/user-websocket.gateway';
 import { ChangeUserStatusDto, ListUserFilterDto, RegisterUserDto, UpdateUserDto } from '../../../../application/dto/in';
 import { UserDeletedResponseDto, UserListResponse, UserResponseDto } from '../../../../application/dto/out';
+import { Roles } from 'libs/common/src/infrastructure/decorators/roles.decorators';
+import { RoleGuard } from 'libs/common/src/infrastructure/guard/roles.guard';
 
 @Controller('users')
+@UseGuards(RoleGuard)
+@Roles('Administrador')
 export class UserRestController {
   constructor(
     @Inject('IUserQueryPort') 

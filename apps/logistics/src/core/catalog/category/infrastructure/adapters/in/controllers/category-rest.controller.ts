@@ -1,7 +1,3 @@
-/* ============================================
-   logistics/src/core/catalog/category/infrastructure/adapters/in/controllers/category-rest.controller.ts
-   ============================================ */
-
 import {
   Controller,
   Post,
@@ -16,7 +12,10 @@ import {
   Get,
   Query,
 } from '@nestjs/common';
-import { ICategoryCommandPort, ICategoryQueryPort } from '../../../../domain/ports/in/category-ports-in';
+import {
+  ICategoryCommandPort,
+  ICategoryQueryPort,
+} from '../../../../domain/ports/in/category-ports-in';
 import {
   ChangeCategoryStatusDto,
   ListCategoryFilterDto,

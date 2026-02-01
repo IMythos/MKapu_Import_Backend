@@ -25,11 +25,6 @@ export class ProductRestController {
     private readonly commandService: ProductCommandService,
     private readonly queryService: ProductQueryService,
   ) {}
-
-  // ===============================
-  // Commands
-  // ===============================
-
   @Post()
   async register(@Body() dto: RegisterProductDto) {
     return this.commandService.registerProduct(dto);
@@ -54,11 +49,6 @@ export class ProductRestController {
   async delete(@Param('id', ParseIntPipe) id: number) {
     return this.commandService.deleteProduct(id);
   }
-
-  // ===============================
-  // Queries
-  // ===============================
-
   @Get()
   async list(@Query() filters: ListProductFilterDto) {
     return this.queryService.listProducts(filters);
@@ -75,7 +65,9 @@ export class ProductRestController {
   }
 
   @Get('category/:id_categoria')
-  async getByCategory(@Param('id_categoria', ParseIntPipe) id_categoria: number) {
+  async getByCategory(
+    @Param('id_categoria', ParseIntPipe) id_categoria: number,
+  ) {
     return this.queryService.getProductsByCategory(id_categoria);
   }
 }

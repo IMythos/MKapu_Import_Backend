@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /*  api-gateway/src/mainModule.ts */
 /* eslint-disable prettier/prettier */
 import { NestFactory } from '@nestjs/core';
@@ -62,6 +63,7 @@ async function bootstrap() {
       target: `${logisticsUrl}`,
       changeOrigin: true,
       pathRewrite: { '^/logistics': '' },
+      ws:true,
     }),
   );
 

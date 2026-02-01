@@ -3,7 +3,7 @@
    administration/src/core/headquarters/infrastructure/controllers/headquarters-rest.controller.ts
    ============================================ */
 
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, Param, ParseIntPipe, Post, Put, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, Param, ParseIntPipe, Post, Put, Query, UseGuards } from "@nestjs/common";
 import { IHeadquartersCommandPort, IHeadquartersQueryPort } from "../../../../domain/ports/in/headquarters-ports-in";
 import { HeadquarterWebSocketGateway } from "../../out/headquarters-websocket.gateway";
 import { HeadquartersResponseDto } from "../../../../application/dto/out/headquarters-response-dto";
@@ -12,8 +12,12 @@ import { UpdateHeadquartersDto } from "../../../../application/dto/in/update-hea
 import { HeadquartersDeletedResponseDto } from "../../../../application/dto/out/headquarters-deleted-response-dto";
 import { ListHeadquartersFilterDto } from "../../../../application/dto/in/list-headquarters-filter-dto";
 import { HeadquartersListResponse } from "../../../../application/dto/out/headquarters-list-response";
+import { Roles } from "libs/common/src/infrastructure/decorators/roles.decorators";
+import { RoleGuard } from "libs/common/src/infrastructure/guard/roles.guard";
 
 @Controller('headquarters')
+@UseGuards(RoleGuard)
+@Roles('Administrador')
 export class HeadquarterRestController {
    constructor(
       @Inject('IHeadquartersQueryPort')

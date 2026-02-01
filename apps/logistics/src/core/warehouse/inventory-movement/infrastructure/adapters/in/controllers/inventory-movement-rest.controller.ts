@@ -19,7 +19,7 @@ export class InventoryMovementRestController {
   ) {}
 
   @Post('income')
-  @Roles('ADMIN')
+  @Roles('Administrador')
   @HttpCode(HttpStatus.CREATED)
   async registerIncome(@Body() dto: RegisterMovementDto) {
     await this.commandService.registerIncome(dto);

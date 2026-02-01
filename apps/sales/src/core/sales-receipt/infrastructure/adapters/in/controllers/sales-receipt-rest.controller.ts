@@ -96,19 +96,3 @@ export class SalesReceiptRestController {
     return this.receiptQueryService.getReceiptsBySerie(serie);
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

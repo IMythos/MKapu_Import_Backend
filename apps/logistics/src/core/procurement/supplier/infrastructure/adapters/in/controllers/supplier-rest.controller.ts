@@ -1,9 +1,3 @@
-
-
-/* ============================================
-   logistics/src/core/procurement/supplier/infrastructure/adapters/in/controllers/supplier-rest.controller.ts
-   ============================================ */
-
 import {
   Controller,
   Post,
@@ -18,7 +12,10 @@ import {
   Get,
   Query,
 } from '@nestjs/common';
-import { ISupplierCommandPort, ISupplierQueryPort } from '../../../../domain/ports/in/supplier-ports-in';
+import {
+  ISupplierCommandPort,
+  ISupplierQueryPort,
+} from '../../../../domain/ports/in/supplier-ports-in';
 import {
   ChangeSupplierStatusDto,
   ListSupplierFilterDto,
