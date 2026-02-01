@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* sales/src/core/sales-receipt/infrastructure/adapters/out/http/logistics-stock.proxy.ts */
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
@@ -18,7 +20,9 @@ export class LogisticsStockProxy {
       await axios.post(`${this.baseUrl}/movement`, data);
     } catch (error) {
       // Si falla logística, lanzamos error para no completar la venta sin stock
-      throw new Error(`Error en Logística: ${error.response?.data?.message || error.message}`);
+      throw new Error(
+        `Error en Logística: ${error.response?.data?.message || error.message}`,
+      );
     }
   }
 }

@@ -1,7 +1,3 @@
-/* ============================================
-   logistics/src/core/catalog/category/infrastructure/adapters/in/controllers/category-rest.controller.ts
-   ============================================ */
-
 import {
   Controller,
   Post,

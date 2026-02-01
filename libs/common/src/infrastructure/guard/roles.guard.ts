@@ -15,6 +15,13 @@ import { ROLES_KEY } from '../..';
 @Injectable()
 export class RoleGuard {
   constructor(private reflector: Reflector) {}
+  private readonly rolePermissions = {
+    VENDEDOR: ['REGISTRAR_VENTA', 'GENERAR_COTIZACION', 'BUSCAR_PRODUCTOS', 'REGISTRAR_RECLAMO', 'REGISTRAR_GARANTIA'],
+    CAJERO: ['ABRIR_CAJA', 'CERRAR_CAJA', 'GESTIONAR_CAJA_CHICA', 'GENERAR_COTIZACION', 'BUSCAR_PRODUCTOS'],
+    ALMACENERO: ['VER_STOCK', 'REGISTRAR_ENTRADA', 'REGISTRAR_SALIDA', 'VER_MOVIMIENTOS', 'CLASIFICAR_PRODUCTO'],
+    'JEFE DE ALMACEN': ['VER_STOCK', 'REGISTRAR_ENTRADA', 'REGISTRAR_SALIDA', 'APROBAR_GARANTIA', 'VER_MOVIMIENTOS'],
+    ADMINISTRADOR: ['*']
+  };
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(
       ROLES_KEY,
