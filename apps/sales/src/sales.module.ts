@@ -20,6 +20,8 @@ import { SalesReceiptDetailOrmEntity } from './core/sales-receipt/infrastructure
 import { SalesTypeOrmEntity } from './core/sales-receipt/infrastructure/entity/sales-type-orm.entity'; // ✅ Para FK de tipo_venta
 import { ReceiptTypeOrmEntity } from './core/sales-receipt/infrastructure/entity/receipt-type-orm.entity'; // ✅ Para FK de tipo_comprobante
 import { SunatCurrencyOrmEntity } from './core/sales-receipt/infrastructure/entity/sunat-currency-orm.entity'; // ✅ Para 'PEN'
+import { CashboxOrmEntity } from './core/cashbox/infrastructure/entity/cashbox-orm.entity';
+import { CashboxModule } from './core/cashbox/cashbox.module';
 
 @Module({
   imports: [
@@ -45,7 +47,8 @@ import { SunatCurrencyOrmEntity } from './core/sales-receipt/infrastructure/enti
           SalesReceiptDetailOrmEntity,
           SalesTypeOrmEntity,
           ReceiptTypeOrmEntity,
-          SunatCurrencyOrmEntity
+          SunatCurrencyOrmEntity,
+          CashboxOrmEntity,
         ],
         synchronize: false,
         autoLoadEntities: true,
@@ -62,6 +65,7 @@ import { SunatCurrencyOrmEntity } from './core/sales-receipt/infrastructure/enti
     CustomerModule,
     PromotionModule,
     SalesReceiptModule,
+    CashboxModule,
   ],
   controllers: [SalesController],
   providers: [SalesService],
