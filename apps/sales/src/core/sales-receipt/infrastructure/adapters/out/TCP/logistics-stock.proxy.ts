@@ -1,29 +1,41 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* sales/src/core/sales-receipt/infrastructure/adapters/out/http/logistics-stock.proxy.ts */
-import { Inject, Injectable } from '@nestjs/common';
+/* sales/src/core/sales-receipt/infrastructure/adapters/out/TCP/logistics-stock.proxy.ts */
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { lastValueFrom } from 'rxjs';
+import { lastValueFrom, timeout } from 'rxjs';
 
 @Injectable()
-export class LogisticsStockProxy {
+export class LogisticsStockProxy implements OnModuleInit {
   constructor(
     @Inject('LOGISTICS_SERVICE') private readonly client: ClientProxy,
   ) {}
 
-  async registerMovement(data: {
-    productId: number;
-    warehouseId: number;
-    headquartersId: number;
-    quantityDelta: number;
-    reason: string;
-  }): Promise<void> {
+  // Esto asegura que Sales intente conectar a Logistics apenas arranque el módulo
+  async onModuleInit() {
+    try {
+      await this.client.connect();
+      console.log('✅ Sales conectado exitosamente al bus TCP de Logística');
+    } catch (err) {
+      console.error('❌ Sales no pudo conectar al bus TCP de Logística:', err.message);
+    }
+  }
+
+  async registerMovement(data: any): Promise<void> {
     try {
       const pattern = { cmd: 'register_movement' };
-      await lastValueFrom(this.client.send(pattern, data));
-    } catch (error) {
-      throw new Error(
-        `Error en Logística: ${error.response?.data?.message || error.message}`,
+      
+      // Enviamos y esperamos respuesta con un tiempo límite de 5 segundos
+      await lastValueFrom(
+        this.client.send(pattern, data).pipe(timeout(5000))
       );
+      
+    } catch (error) {
+      // Si el error es un timeout o conexión cerrada
+      const errorMsg = error.name === 'TimeoutError' 
+        ? 'Tiempo de espera agotado (Logística no respondió)' 
+        : (error.message || 'Conexión cerrada abruptamente');
+      
+      console.error(`[LogisticsStockProxy] Error: ${errorMsg}`);
+      throw new Error(`No se pudo registrar el movimiento de stock: ${errorMsg}`);
     }
   }
 }

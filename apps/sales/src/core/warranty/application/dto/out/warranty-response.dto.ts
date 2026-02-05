@@ -13,22 +13,26 @@ export class WarrantyTrackingResponseDto {
   estado_anterior?: number;
   estado_nuevo: number;
   observacion: string;
-  nombre_estado_nuevo?: string; // Opcional: Para mostrar el nombre en lugar del ID
+  nombre_estado_nuevo?: string; 
 }
 
 export class WarrantyResponseDto {
   id_garantia: number;
   id_comprobante: number;
   id_usuario_recepcion: string;
-  estado: string; // Nombre del estado actual
-
+  estado: string; 
   fec_solicitud: Date;
   fec_recepcion?: Date;
-
   cod_prod: string;
   prod_nombre: string;
   num_garantia: string;
-
   detalles: WarrantyDetailResponseDto[];
   seguimientos: WarrantyTrackingResponseDto[];
+}
+
+// AGREGAR ESTO PARA ELIMINAR EL ERROR DE IMPORTACIÓN
+export class WarrantyDeleteResponseDto {
+  id_garantia: number;
+  message: string;
+  deletedAt: Date;
 }

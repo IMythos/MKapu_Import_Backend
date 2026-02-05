@@ -3,6 +3,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HttpModule } from '@nestjs/axios'; 
+import { ClientsModule, Transport } from '@nestjs/microservices'; 
 
 // Entidades ORM 
 import { SalesReceiptOrmEntity } from './infrastructure/entity/sales-receipt-orm.entity';
@@ -24,7 +25,7 @@ import { LogisticsStockProxy } from './infrastructure/adapters/out/TCP/logistics
 
 // Repositorios
 import { SalesReceiptRepository } from './infrastructure/adapters/out/repository/sales-receipt.respository';
-import { PaymentRepository } from './infrastructure/adapters/out/repository/payment.repository'; // ✅ Nuevo
+import { PaymentRepository } from './infrastructure/adapters/out/repository/payment.repository'; 
 import { CustomerRepository } from '../customer/infrastructure/adapters/out/repository/customer.repository';
 
 // Otros
@@ -33,64 +34,48 @@ import { SalesReceiptRestController } from './infrastructure/adapters/in/control
 
 @Module({
   imports: [
-    HttpModule, 
+    HttpModule,
+    ClientsModule.register([
+      {
+        name: 'LOGISTICS_SERVICE', 
+        transport: Transport.TCP,   
+        options: {
+          host: '127.0.0.1',
+          port: 3005,               
+        },
+      },
+    ]),
     TypeOrmModule.forFeature([
       SalesReceiptOrmEntity,
       SalesTypeOrmEntity,
       ReceiptTypeOrmEntity,
-      SalesReceiptDetailOrmEntity, 
       SunatCurrencyOrmEntity,
       CustomerOrmEntity,
       DocumentTypeOrmEntity,
+      SalesReceiptDetailOrmEntity,
       PaymentTypeOrmEntity,
       PaymentOrmEntity,
       VoucherOrmEntity,
       CashMovementOrmEntity,
     ]),
-    CustomerModule, 
+    CustomerModule,
   ],
-
-  controllers: [
-    SalesReceiptRestController,
-  ],
-
+  controllers: [SalesReceiptRestController],
   providers: [
     SalesReceiptCommandService,
     SalesReceiptQueryService,
     SalesReceiptRepository,
-    PaymentRepository, 
-    LogisticsStockProxy, 
-
-    // Ports de Sales Receipt
-    {
-      provide: 'ISalesReceiptCommandPort',
-      useClass: SalesReceiptCommandService,
-    },
-    {
-      provide: 'ISalesReceiptQueryPort',
-      useClass: SalesReceiptQueryService,
-    },
-    {
-      provide: 'ISalesReceiptRepositoryPort',
-      useClass: SalesReceiptRepository,
-    },
-    {
-      provide: 'IPaymentRepositoryPort',
-      useClass: PaymentRepository,
-    },
-    {
-      provide: 'ICustomerRepositoryPort',
-      useClass: CustomerRepository,
-    },
-    {
-      provide: 'IStockRepositoryPort', 
-      useClass: LogisticsStockProxy,
-    },
+    PaymentRepository,
+    LogisticsStockProxy, // Este es el que pedía el servicio
+    
+    // Ports
+    { provide: 'ISalesReceiptCommandPort', useClass: SalesReceiptCommandService },
+    { provide: 'ISalesReceiptQueryPort', useClass: SalesReceiptQueryService },
+    { provide: 'ISalesReceiptRepositoryPort', useClass: SalesReceiptRepository },
+    { provide: 'IPaymentRepositoryPort', useClass: PaymentRepository },
+    { provide: 'ICustomerRepositoryPort', useClass: CustomerRepository },
+    { provide: 'IStockRepositoryPort', useClass: LogisticsStockProxy },
   ],
-
-  exports: [
-    SalesReceiptCommandService, 
-    SalesReceiptQueryService
-  ],
+  exports: [SalesReceiptCommandService, SalesReceiptQueryService],
 })
 export class SalesReceiptModule {}

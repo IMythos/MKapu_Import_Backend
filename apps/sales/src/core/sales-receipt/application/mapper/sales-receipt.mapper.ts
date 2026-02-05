@@ -15,6 +15,7 @@ export class SalesReceiptMapper {
     // 1. Mapeamos los items primero para cumplir con la validación de dominio
     const domainItems = dto.items ? dto.items.map(item => ({
       productId: item.productId,
+      productName: (item as any).productName || 'Producto', 
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       description: item.description,
@@ -23,55 +24,56 @@ export class SalesReceiptMapper {
     })) : [];
 
     // 2. Creamos la entidad de dominio
-    return SalesReceipt.createNew(
-      dto.customerId,
-      dto.saleTypeId,
-      dto.receiptTypeId,
-      dto.serie,
-      nextNumber,
-      new Date(),
-      dto.dueDate,
-      dto.operationType,
-      dto.subtotal,
-      dto.igv,
-      dto.isc,
-      dto.total,
-      dto.responsibleId,
-      dto.branchId,
-      dto.currencyCode,
-      domainItems
-    );
-  }
+  return SalesReceipt.createNew(
+        dto.customerId,
+        dto.saleTypeId,
+        dto.receiptTypeId,
+        dto.serie,
+        nextNumber,
+        new Date(),
+        dto.dueDate,
+        dto.operationType,
+        dto.subtotal,
+        dto.igv,
+        dto.isc,
+        dto.total,
+        dto.responsibleId,
+        dto.branchId,
+        dto.currencyCode,
+        domainItems
+      );
+    }
 
   static toDomain(orm: SalesReceiptOrmEntity): SalesReceipt {
-    return SalesReceipt.create({
-      id_comprobante: orm.id_comprobante,
-      id_cliente: orm.cliente?.id_cliente, 
-      id_tipo_venta: orm.tipoVenta?.id_tipo_venta,
-      id_tipo_comprobante: orm.tipoComprobante?.id_tipo_comprobante,
-      cod_moneda: orm.moneda?.codigo,
-      serie: orm.serie,
-      numero: orm.numero,
-      fec_emision: orm.fec_emision,
-      fec_venc: orm.fec_venc,
-      tipo_operacion: orm.tipo_operacion,
-      subtotal: Number(orm.subtotal),
-      igv: Number(orm.igv),
-      isc: Number(orm.isc),
-      total: Number(orm.total),
-      estado: orm.estado as unknown as ReceiptStatus,
-      id_responsable_ref: orm.id_responsable_ref,
-      id_sede_ref: orm.id_sede_ref,
-      items: orm.details?.map(d => ({
-        productId: d.id_prod_ref,
-        quantity: Number(d.cantidad),
-        unitPrice: Number(d.pre_uni),
-        description: d.descripcion,
-        total: Number(d.cantidad) * Number(d.pre_uni),
-        igv: Number(d.igv)
-      })) || []
-    });
-  }
+      return SalesReceipt.create({
+        id_comprobante: orm.id_comprobante,
+        id_cliente: orm.cliente?.id_cliente, 
+        id_tipo_venta: orm.tipoVenta?.id_tipo_venta,
+        id_tipo_comprobante: orm.tipoComprobante?.id_tipo_comprobante,
+        cod_moneda: orm.moneda?.codigo,
+        serie: orm.serie,
+        numero: orm.numero,
+        fec_emision: orm.fec_emision,
+        fec_venc: orm.fec_venc,
+        tipo_operacion: orm.tipo_operacion,
+        subtotal: Number(orm.subtotal),
+        igv: Number(orm.igv),
+        isc: Number(orm.isc),
+        total: Number(orm.total),
+        estado: orm.estado as unknown as ReceiptStatus,
+        id_responsable_ref: orm.id_responsable_ref,
+        id_sede_ref: orm.id_sede_ref,
+        items: orm.details?.map(d => ({
+          productId: d.id_prod_ref,
+          productName: (d as any).descripcion || 'Producto', // ✅ Se mapea productName (usualmente la descripción en la boleta)
+          quantity: Number(d.cantidad),
+          unitPrice: Number(d.pre_uni),
+          description: d.descripcion,
+          total: Number(d.cantidad) * Number(d.pre_uni),
+          igv: Number(d.igv)
+        })) || []
+      });
+    }
 
   static toOrm(domain: SalesReceipt): SalesReceiptOrmEntity {
     const orm = new SalesReceiptOrmEntity();
