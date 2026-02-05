@@ -9,33 +9,68 @@ export class LogisticsStockProxy implements OnModuleInit {
     @Inject('LOGISTICS_SERVICE') private readonly client: ClientProxy,
   ) {}
 
+  private static isConnecting = false;
+  private static hasConnected = false;
+  // Lógica de reconexión robusta para evitar ECONNREFUSED al iniciar todo junto
   async onModuleInit() {
-    try {
-      await this.client.connect();
-      console.log('✅ Sales conectado exitosamente al bus TCP de Logística');
-    } catch (err) {
-      console.error('❌ Sales no pudo conectar al bus TCP de Logística:', err.message);
+    // 1. Evitamos que múltiples llamadas simultáneas inicien bucles de reintento
+    if (LogisticsStockProxy.isConnecting || LogisticsStockProxy.hasConnected) {
+      return;
+    }
+
+    LogisticsStockProxy.isConnecting = true;
+    const MAX_RETRIES = 10;
+    let delay = 2000; 
+
+    for (let i = 1; i <= MAX_RETRIES; i++) {
+      try {
+        // Intentamos la conexión TCP
+        await this.client.connect();
+        
+        // 2. Solo imprimimos el éxito una vez
+        if (!LogisticsStockProxy.hasConnected) {
+          console.log('✅ [LogisticsStockProxy] Conectado exitosamente al bus TCP (Puerto 3005)');
+          LogisticsStockProxy.hasConnected = true;
+        }
+        
+        LogisticsStockProxy.isConnecting = false;
+        return; 
+
+      } catch (err) {
+        // 3. Log de error silencioso para no ensuciar la consola si ya sabemos que está reintentando
+        console.error(`❌ [LogisticsStockProxy] Intento ${i}/${MAX_RETRIES} fallido: Logistics no responde. Reintentando en ${delay / 1000}s...`);
+        
+        if (i === MAX_RETRIES) {
+          console.error('🛑 [LogisticsStockProxy] No se pudo establecer conexión tras varios intentos.');
+          LogisticsStockProxy.isConnecting = false;
+        } else {
+          await new Promise(resolve => setTimeout(resolve, delay));
+          // Backoff progresivo: 2s, 3s, 4.5s... hasta un tope de 10s
+          delay = Math.min(delay * 1.5, 10000); 
+        }
+      }
     }
   }
 
   async registerMovement(data: any): Promise<void> {
-    const pattern = { cmd: 'register_movement' };
-    
     try {
-      const response = await lastValueFrom(
-        this.client.send(pattern, data).pipe(
-          timeout(5000)
-        )
+      const pattern = { cmd: 'register_movement' };
+      
+      // Enviamos y esperamos respuesta. Si el microservicio devuelve un error, 
+      // lastValueFrom lanzará una excepción automáticamente.
+      await lastValueFrom(
+        this.client.send(pattern, data).pipe(timeout(5000))
       );
-
-      if (response && response.error) {
-        throw new Error(response.error);
-      }
+      
     } catch (error) {
-      const errorMsg = error.message || 'Stock insuficiente o error de conexión';
-      console.error(`[LogisticsStockProxy] ❌ DETENIENDO FLUJO: ${errorMsg}`);
-      throw new Error(errorMsg); // Este throw es el que DEBE matar el service
+      // Limpiamos el mensaje para que el usuario no vea "Error: Error: ..."
+      const rawMsg = error.message || 'Error de comunicación con Logística';
+      const cleanMsg = rawMsg.replace(/Error:/g, '').trim();
+      
+      console.error(`[LogisticsStockProxy] ❌ Error en movimiento: ${cleanMsg}`);
+      
+      // Lanzamos un error genérico que el Service capturará para hacer el Rollback
+      throw new Error(cleanMsg);
     }
   }
-
 }

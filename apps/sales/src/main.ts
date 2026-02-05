@@ -7,7 +7,7 @@ import { SalesModule } from './sales.module';
 async function bootstrap() {
   const app = await NestFactory.create(SalesModule);
 
-  // Obtener ConfigService
+  // Obtener ConfigService 
   const configService = app.get(ConfigService);
 
   // Habilitar CORS

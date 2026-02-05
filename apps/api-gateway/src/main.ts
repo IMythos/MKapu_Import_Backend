@@ -87,7 +87,7 @@ async function bootstrap() {
       url.startsWith('/headquarters');
 
     if (isAdminSocket) {
-      console.log(`⚡ Handshake detectado para ADMINISTRATION (Namespace: ${url})`);
+      console.log(`⚡ Handshake detectado para ADMINISTRATIONN (Namespace: ${url})`);
       adminProxy.upgrade(req, socket, head);
     } 
     // Condición para Gateways en el microservicio Logistics (3003)
