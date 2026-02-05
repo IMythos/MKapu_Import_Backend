@@ -1,8 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* api-gateway/src/mainModule.ts */
-/* eslint-disable prettier/prettier */
 import { NestFactory } from '@nestjs/core';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { AppModule } from './app.module';
@@ -17,13 +15,18 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Accept, Authorization',
   });
 
+  // --- DEFINICIÓN DE PUERTOS (CORREGIDO) ---
   const authUrl = process.env.AUTH_SERVICE_URL ?? 'http://localhost:3001';
   const adminUrl = process.env.ADMIN_SERVICE_URL ?? 'http://localhost:3002';
-  const logisticsUrl =
-    process.env.LOGISTICS_SERVICE_URL ?? 'http://localhost:3003';
-  const salesUrl = process.env.SALES_SERVICE_URL ?? 'http://localhost:3004';
 
-  // 1. Definición de Proxies con soporte para WebSockets
+  // Ventas ahora está en el 3003 (Antes 3004)
+  const salesUrl = process.env.SALES_SERVICE_URL ?? 'http://localhost:3003';
+
+  // Logística ahora está en el 3005 (Antes 3003 o 3004)
+  const logisticsUrl =
+    process.env.LOGISTICS_SERVICE_URL ?? 'http://localhost:3005';
+
+  // --- 1. PROXIES CON WEBSOCKETS ---
   const adminProxy = createProxyMiddleware({
     target: adminUrl,
     changeOrigin: true,
@@ -56,7 +59,7 @@ async function bootstrap() {
     },
   });
 
-  // 2. Registro de rutas para peticiones HTTP
+  // --- 2. REGISTRO DE RUTAS HTTP ---
   app.use(
     '/auth',
     createProxyMiddleware({
@@ -65,14 +68,17 @@ async function bootstrap() {
       pathRewrite: { '^/auth': '' },
     }),
   );
+
   app.use('/admin', adminProxy);
   app.use('/logistics', logisticsProxy);
+
   app.use(
     '/sales',
     createProxyMiddleware({
       target: salesUrl,
       changeOrigin: true,
       pathRewrite: { '^/sales': '' },
+      // Manejo de body para evitar problemas de "hanging" en POST requests
       on: {
         proxyReq: (proxyReq, req: any) => {
           if (req.body) {
@@ -87,15 +93,14 @@ async function bootstrap() {
     }),
   );
 
-  // 3. Inicio del servidor
+  // --- 3. INICIO DEL SERVIDOR ---
   const server = await app.listen(3000);
 
-  // 4. 🚀 MANEJO MANUAL DE HANDSHAKES PARA TODOS LOS NAMESPACES
-  // Esto soluciona el timeout al interceptar los protocolos de cambio (Upgrade)
+  // --- 4. MANEJO MANUAL DE HANDSHAKES (WEBSOCKETS) ---
   server.on('upgrade', (req, socket, head) => {
     const url = req.url || '';
 
-    // Condición para todos los Gateways en el microservicio Administration (3002)
+    // Admin Sockets
     const isAdminSocket =
       url.startsWith('/admin') ||
       url.startsWith('/users') ||
@@ -103,15 +108,15 @@ async function bootstrap() {
       url.startsWith('/permissions') ||
       url.startsWith('/headquarters');
 
+    // Logistics Sockets
+    const isLogisticsSocket =
+      url.startsWith('/logistics') || url.startsWith('/products');
+
     if (isAdminSocket) {
-      console.log(
-        `⚡ Handshake detectado para ADMINISTRATION (Namespace: ${url})`,
-      );
+      // console.log(`⚡ Handshake detectado para ADMINISTRATION`);
       adminProxy.upgrade(req, socket, head);
-    }
-    // Condición para Gateways en el microservicio Logistics (3003)
-    else if (url.startsWith('/logistics') || url.startsWith('/products')) {
-      console.log(`⚡ Handshake detectado para LOGISTICS (Namespace: ${url})`);
+    } else if (isLogisticsSocket) {
+      // console.log(`⚡ Handshake detectado para LOGISTICS`);
       logisticsProxy.upgrade(req, socket, head);
     }
   });
@@ -119,5 +124,7 @@ async function bootstrap() {
   console.log(
     `🌍 API Gateway MKapu Import corriendo en: http://localhost:3000`,
   );
+  console.log(`   👉 Sales -> ${salesUrl}`);
+  console.log(`   👉 Logistics -> ${logisticsUrl}`);
 }
 bootstrap();
