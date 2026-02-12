@@ -37,7 +37,6 @@ async function bootstrap() {
     }),
   );
 
-  // ✅ NUEVO: proxy para SALES
   app.use(
     '/sales',
     createProxyMiddleware({
