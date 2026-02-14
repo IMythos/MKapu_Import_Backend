@@ -5,3 +5,12 @@ export class WastageResponseDto {
   total_items: number;
   estado: boolean;
 }
+
+// wastage-paginated-response.dto.ts
+export class WastagePaginatedResponseDto {
+  data: WastageResponseDto[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
