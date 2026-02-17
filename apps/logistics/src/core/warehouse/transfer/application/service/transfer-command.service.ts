@@ -27,7 +27,7 @@ import {
   TransferStatus,
 } from '../../domain/entity/transfer-domain-entity';
 import { UnitStatus } from 'apps/logistics/src/core/catalog/unit/domain/entity/unit-domain-entity';
-import { StockOrmEntity } from '../../../inventory/infrastructure/entity/stock-orm-intity';
+import { StockOrmEntity } from '../../../inventory/infrastructure/entity/stock-orm-entity';
 
 // Servicios Externos
 import { TransferWebsocketGateway } from '../../infrastructure/adapters/out/transfer-websocket.gateway';

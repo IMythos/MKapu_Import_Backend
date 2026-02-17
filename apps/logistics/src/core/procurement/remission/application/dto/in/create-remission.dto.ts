@@ -1,51 +1,57 @@
 import {
-  IsNotEmpty,
   IsString,
   IsNumber,
   ValidateNested,
   IsOptional,
+  IsArray,
+  IsDateString,
   IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { TransportMode } from '../../../domain/entity/remission-domain-entity';
+import {
+  RemissionType,
+  TransportMode,
+} from '../../../domain/entity/remission-domain-entity';
 
 class TransportDataDto {
+  // Para Transporte PRIVADO
+  @IsOptional() @IsString() nombre_completo?: string;
+  @IsOptional() @IsString() tipo_documento?: string;
+  @IsOptional() @IsString() numero_documento?: string;
+  @IsOptional() @IsString() licencia?: string;
+  @IsOptional() @IsString() placa?: string;
+
+  // Para Transporte PUBLICO
+  @IsOptional() @IsString() ruc?: string;
+  @IsOptional() @IsString() razon_social?: string;
+}
+
+class TransferDataDto {
+  @IsString() ubigeo_origen: string;
+  @IsString() direccion_origen: string;
+  @IsString() ubigeo_destino: string;
+  @IsString() direccion_destino: string;
+}
+
+class RemissionItemDto {
+  @IsNumber() id_producto: number;
+  @IsString() cod_prod: string;
+  @IsNumber() cantidad: number;
+  @IsNumber() peso_total: number;
+}
+export class CreateRemissionDto {
+  @IsNumber() id_comprobante_ref: number;
+  @IsNumber() id_sede_origen: string;
+  @IsNumber() id_usuario: number;
+
+  @IsEnum(RemissionType)
+  tipo_guia: RemissionType;
+
   @IsEnum(TransportMode)
   modalidad: TransportMode;
 
-  @IsNotEmpty()
-  fecha_inicio_traslado: Date;
-
-  @IsOptional() ruc_transportista?: string;
-  @IsOptional() razon_social_transportista?: string;
-  @IsOptional() dni_conductor?: string;
-  @IsOptional() nombre_conductor?: string;
-  @IsOptional() placa_vehiculo?: string;
-}
-
-class RemissionDetailItemDto {
-  @IsNotEmpty() codigo_producto: string;
-  @IsNotEmpty() descripcion: string;
-  @IsNumber() cantidad: number;
-  @IsString() unidad_medida: string;
-  @IsNumber() peso_total: number;
-}
-
-export class CreateRemissionDto {
-  @IsNumber()
-  id_comprobante_ref: number;
-
-  @IsNumber()
-  id_sede_origen: number;
-
-  @IsNumber()
-  id_usuario_responsable: number;
-
-  @IsString()
-  ubigeo_llegada: string;
-
-  @IsString()
-  direccion_llegada: string;
+  @IsDateString()
+  fecha_inicio_traslado: string;
 
   @IsString()
   motivo_traslado: string;
@@ -53,12 +59,17 @@ export class CreateRemissionDto {
   @IsNumber()
   peso_bruto_total: number;
 
-  // Datos Anidados (Transporte y Detalles)
+  // Objetos anidados
+  @ValidateNested()
+  @Type(() => TransferDataDto)
+  datos_traslado: TransferDataDto;
+
   @ValidateNested()
   @Type(() => TransportDataDto)
   datos_transporte: TransportDataDto;
 
+  @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => RemissionDetailItemDto)
-  detalles: RemissionDetailItemDto[];
+  @Type(() => RemissionItemDto)
+  items: RemissionItemDto[];
 }

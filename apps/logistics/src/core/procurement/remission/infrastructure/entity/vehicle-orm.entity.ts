@@ -5,7 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { RemissionOrmEntity } from './remission-orm.entity'; // Importa tu entidad de guía
+import { RemissionOrmEntity } from './remission-orm.entity';
 
 @Entity('vehiculo')
 export class VehiculoOrmEntity {
@@ -16,7 +16,7 @@ export class VehiculoOrmEntity {
   @JoinColumn({ name: 'id_guia' })
   guia: RemissionOrmEntity;
 
-  @Column({ name: 'id_guia', type: 'char', length: 36 }) // UUID para coincidir con RemissionOrmEntity
+  @Column({ name: 'id_guia', type: 'char', length: 36 })
   id_guia: string;
 
   @Column({ name: 'placa', type: 'varchar', length: 10 })
@@ -34,5 +34,5 @@ export class VehiculoOrmEntity {
   config_vehicular: string;
 
   @Column({ name: 'numero_mtc', type: 'varchar', length: 20, nullable: true })
-  numero_mtc: string; // Número de constancia de inscripción MTC
+  numero_mtc: string;
 }

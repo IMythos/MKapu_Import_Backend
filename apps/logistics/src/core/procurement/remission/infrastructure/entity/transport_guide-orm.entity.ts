@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 import { RemissionOrmEntity } from './remission-orm.entity';
 
-@Entity('guia_transferencia')
+@Entity('guia_traslado')
 export class GuideTransferOrm {
   @PrimaryGeneratedColumn({ name: 'id_traslado' })
   id_straslado: number;

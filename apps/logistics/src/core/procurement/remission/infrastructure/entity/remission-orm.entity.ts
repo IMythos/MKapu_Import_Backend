@@ -1,13 +1,4 @@
-import { HeadquartersOrmEntity } from 'apps/administration/src/core/headquarters/infrastructure/entity/headquarters-orm.entity';
-import { UserOrmEntity } from 'apps/auth/src/core/infrastructure/entity/user-orm-entity';
-import { SalesReceiptOrmEntity } from 'apps/sales/src/core/sales-receipt/infrastructure/entity/sales-receipt-orm.entity';
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 export enum RemissionType {
   REMITENTE,
@@ -85,24 +76,12 @@ export class RemissionOrmEntity {
   @Column({ type: 'text', name: 'observaciones', nullable: true })
   observaciones: string;
 
-  @ManyToOne(() => SalesReceiptOrmEntity)
-  @JoinColumn({ name: 'id_comprobante_ref' })
-  comprobante: SalesReceiptOrmEntity;
-
-  @Column({ type: 'int', name: 'id_comprobante_ref', nullable: true })
+  @Column({ name: 'id_comprobante_ref', type: 'int', nullable: false })
   id_comprobante_ref: number;
 
-  @ManyToOne(() => UserOrmEntity)
-  @JoinColumn({ name: 'id_usuario_ref' })
-  usuario: UserOrmEntity;
-
-  @Column({ type: 'int', name: 'id_usuario_ref' })
+  @Column({ name: 'id_usuario_ref', type: 'int' })
   id_usuario_ref: number;
 
-  @ManyToOne(() => HeadquartersOrmEntity)
-  @JoinColumn({ name: 'id_sede_ref' })
-  sede: HeadquartersOrmEntity;
-
-  @Column({ type: 'int', name: 'id_sede_ref' })
-  id_sede_ref: number;
+  @Column({ name: 'id_sede_ref', type: 'int' })
+  id_sede_ref: string;
 }
