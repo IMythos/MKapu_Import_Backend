@@ -127,18 +127,14 @@ export class TransferCommandService implements TransferPortsIn {
       undefined,
       TransferStatus.REQUESTED,
     );
-
-    // 5. Persistir Transferencia
     const savedTransfer = await this.transferRepo.save(transfer);
 
-    // 6. Bloquear unidades (Estado TRANSFERRING)
     await Promise.all(
       allSeries.map((serie) =>
         this.unitRepo.updateStatusBySerial(serie, UnitStatus.TRANSFERRING),
       ),
     );
 
-    // 7. Notificación en tiempo real
     this.transferGateway.notifyNewRequest(dto.destinationHeadquartersId, {
       id: savedTransfer.id,
       origin: dto.originHeadquartersId,
@@ -152,7 +148,6 @@ export class TransferCommandService implements TransferPortsIn {
     const transfer = await this.transferRepo.findById(transferId);
     if (!transfer) throw new NotFoundException('Transferencia no encontrada');
 
-    // Validar stock físico antes de aprobar
     for (const item of transfer.items) {
       const stockDisponible = await this.inventoryService.getStockLevel(
         item.productId,
