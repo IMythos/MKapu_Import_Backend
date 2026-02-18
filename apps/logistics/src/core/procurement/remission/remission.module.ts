@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -5,7 +6,6 @@ import { RemissionOrmEntity } from './infrastructure/entity/remission-orm.entity
 import { RemissionDetailOrmEntity } from './infrastructure/entity/remission-detail-orm.entity';
 
 import { RemissionTypeormRepository } from './infrastructure/adapters/out/repository/remission-typeorm.repository';
-// Controller y Service
 import { RemissionCommandService } from './application/service/remission-command.service';
 import { RemissionController } from './infrastructure/adapters/in/controller/remission.controller';
 import { CarrierOrmEntity } from './infrastructure/entity/carrier-orm.entity';
@@ -13,6 +13,10 @@ import { DriverOrmEntity } from './infrastructure/entity/driver-orm.entity';
 import { GuideTransferOrm } from './infrastructure/entity/transport_guide-orm.entity';
 import { UbigeoOrmEntity } from './infrastructure/entity/ubigeo-orm.entity';
 import { VehiculoOrmEntity } from './infrastructure/entity/vehicle-orm.entity';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
+import { PassportModule } from '@nestjs/passport';
+import { JwtStrategy } from '@app/common/infrastructure/strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -25,15 +29,31 @@ import { VehiculoOrmEntity } from './infrastructure/entity/vehicle-orm.entity';
       UbigeoOrmEntity,
       VehiculoOrmEntity,
     ]),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+
+    ClientsModule.registerAsync([
+      {
+        name: 'SALES_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (config: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: config.get('SALES_MICROSERVICE_HOST') || 'localhost',
+            port: config.get('SALES_MICROSERVICE_PORT') || 3012,
+          },
+        }),
+      },
+    ]),
   ],
   controllers: [RemissionController],
   providers: [
     RemissionCommandService,
-    // LA MAGIA DEL REPOSITORIO:
     {
       provide: 'RemissionPortOut',
       useClass: RemissionTypeormRepository,
     },
+    JwtStrategy,
   ],
   exports: [],
 })

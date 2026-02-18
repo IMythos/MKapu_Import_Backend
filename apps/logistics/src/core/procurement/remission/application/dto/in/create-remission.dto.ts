@@ -41,7 +41,8 @@ class RemissionItemDto {
 }
 export class CreateRemissionDto {
   @IsNumber() id_comprobante_ref: number;
-  @IsNumber() id_sede_origen: string;
+  @IsNumber() id_almacen_origen: number;
+  @IsString() id_sede_origen: string;
   @IsNumber() id_usuario: number;
 
   @IsEnum(RemissionType)
