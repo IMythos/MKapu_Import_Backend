@@ -6,7 +6,7 @@ import {
 import { BitToBooleanTransformer } from 'libs/common/src';
 
 @Entity({ name: 'almacen', schema: 'mkp_logistica' })
-export class AlmacenOrmEntity {
+export class WarehouseOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_almacen', type: 'int' })
   id_almacen!: number;
 
