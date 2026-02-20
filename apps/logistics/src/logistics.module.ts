@@ -70,7 +70,7 @@ import { WarehouseOrmEntity } from './core/warehouse/infrastructure/entity/wareh
           WarehouseOrmEntity,
         ],
         autoLoadEntities: true,
-        synchronize: false,
+        synchronize: true,
         logging: true,
       }),
     }),
