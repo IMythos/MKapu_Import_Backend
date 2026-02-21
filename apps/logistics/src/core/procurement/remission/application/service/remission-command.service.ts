@@ -41,8 +41,8 @@ export class RemissionCommandService implements RemissionPortIn {
     if (!venta)
       throw new NotFoundException('Comprobante de venta no encontrado');
 
-    //const guiaExistente = await this.remissionRepository.findByRefId(venta.id);
-    /*if (guiaExistente)
+    /*const guiaExistente = await this.remissionRepository.findByRefId(venta.id);
+    if (guiaExistente)
       throw new BadRequestException(
         'Esta venta ya tiene una guía de remisión asociada',
       );
