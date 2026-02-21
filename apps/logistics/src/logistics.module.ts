@@ -37,6 +37,8 @@ import { RemissionModule } from './core/procurement/remission/remission.module';
 import { PassportModule } from '@nestjs/passport';
 import { CommonModule } from '@app/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { WarehouseModule } from './core/warehouse/warehouse.module';
+import { WarehouseOrmEntity } from './core/warehouse/infrastructure/entity/warehouse-orm.entity';
 
 
 @Module({
@@ -72,6 +74,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
           WastageTypeOrmEntity,
           AuctionOrmEntity,
           AuctionDetailOrmEntity,
+          WarehouseOrmEntity,
         ],
         autoLoadEntities: true,
         synchronize: false,
@@ -90,6 +93,8 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     InventoryModule,
     AuctionModule,
     RemissionModule,
+    WarehouseModule,
+
   ],
   controllers: [LogisticsController],
   providers: [LogisticsService],
