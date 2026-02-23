@@ -31,6 +31,11 @@ import {
 } from '../../../../application/dto/out';
 import { Roles } from 'libs/common/src/infrastructure/decorators/roles.decorators';
 import { RoleGuard } from 'libs/common/src/infrastructure/guard/roles.guard';
+import { CuentaUsuarioOrmEntity } from '../../../entity/cuenta-usuario-orm.entity';
+import { CuentaRolOrmEntity } from '../../../entity/cuenta-rol-orm.entity';
+import { RoleOrmEntity } from '../../../../../role/infrastructure/entity/role-orm.entity';
+import { HeadquartersOrmEntity } from '../../../../../headquarters/infrastructure/entity/headquarters-orm.entity';
+
 
 @Controller('users')
 //@UseGuards(RoleGuard)
