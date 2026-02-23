@@ -10,12 +10,16 @@ import { InventoryCommandService } from './application/service/inventory-command
 import { InventoryTypeOrmRepository } from './infrastructure/adapters/out/repository/inventory-typeorm.repository';
 import { InventoryMovementRestController } from './infrastructure/adapters/in/controllers/inventory-rest.controller';
 import { InventoryQueryService } from './application/service/inventory-query.service';
+import { ConteoInventarioOrmEntity } from './infrastructure/entity/inventory-count-orm.entity';
+import { ConteoInventarioDetalleOrmEntity } from './infrastructure/entity/inventory-count-detail-orm.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       InventoryMovementOrmEntity,
       InventoryMovementDetailOrmEntity,
+      ConteoInventarioOrmEntity,
+      ConteoInventarioDetalleOrmEntity,
       StockOrmEntity,
       WarehouseOrmEntity,
     ]),
@@ -27,7 +31,7 @@ import { InventoryQueryService } from './application/service/inventory-query.ser
       useClass: InventoryCommandService,
     },
     InventoryCommandService,
-    InventoryQueryService,          
+    InventoryQueryService,
     InventoryTypeOrmRepository,
     {
       provide: 'IInventoryRepositoryPort',
@@ -36,7 +40,7 @@ import { InventoryQueryService } from './application/service/inventory-query.ser
   ],
   exports: [
     InventoryCommandService,
-    InventoryQueryService,          
+    InventoryQueryService,
     InventoryTypeOrmRepository,
     'IInventoryRepositoryPort',
   ],
