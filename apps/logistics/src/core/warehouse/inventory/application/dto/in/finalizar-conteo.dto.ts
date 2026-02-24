@@ -6,37 +6,28 @@ import {
   IsNotEmpty,
   IsNumber,
   IsOptional,
-  IsString,
-  Min,
   ValidateNested,
 } from 'class-validator';
-import { ConteoDetalleInputDto } from './finalizar-conteo.dto';
-import { ConteoEstado } from '../../../infrastructure/entity/inventory-count-orm.entity';
-export class IniciarConteoDto {
-  @IsString()
-  @IsNotEmpty()
-  idSede: string;
 
-  @IsString()
-  @IsNotEmpty()
-  nomSede: string;
+export enum ConteoEstado {
+  PENDIENTE = 'PENDIENTE',
+  INICIADO = 'INICIADO',
+  FINALIZADO = 'FINALIZADO',
+  ANULADO = 'ANULADO',
+}
 
+export class ConteoDetalleInputDto {
   @IsInt()
   @IsNotEmpty()
-  idUsuario: number;
-}
+  id_detalle: number;
 
-export class ActualizarDetalleConteoDto {
   @IsNumber()
-  @Min(0)
-  stockConteo: number;
-
-  @IsString()
-  @IsOptional()
-  observacion?: string;
+  @IsNotEmpty()
+  stock_conteo: number;
 }
+
 export class FinalizarConteoDto {
-  @IsEnum(['AJUSTADO', 'ANULADO'])
+  @IsEnum(ConteoEstado)
   @IsNotEmpty()
   estado: ConteoEstado;
 

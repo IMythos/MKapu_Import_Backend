@@ -12,6 +12,7 @@ import { InventoryMovementRestController } from './infrastructure/adapters/in/co
 import { InventoryQueryService } from './application/service/inventory-query.service';
 import { ConteoInventarioOrmEntity } from './infrastructure/entity/inventory-count-orm.entity';
 import { ConteoInventarioDetalleOrmEntity } from './infrastructure/entity/inventory-count-detail-orm.entity';
+import { InventoryCountController } from './infrastructure/adapters/in/controllers/inventory-count.controller';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { ConteoInventarioDetalleOrmEntity } from './infrastructure/entity/invent
       WarehouseOrmEntity,
     ]),
   ],
-  controllers: [InventoryMovementRestController],
+  controllers: [InventoryMovementRestController, InventoryCountController],
   providers: [
     {
       provide: 'IInventoryMovementCommandPort',

@@ -1,5 +1,3 @@
-/* apps/logistics/src/core/inventory/application/service/inventory-command.service.ts */
-
 import { Inject, Injectable } from '@nestjs/common';
 import {
   IInventoryMovementCommandPort,
@@ -48,7 +46,7 @@ export class InventoryCommandService implements IInventoryMovementCommandPort {
     const fullDto: CreateInventoryMovementDto = {
       ...dto,
       originType: dto.originType || 'TRANSFERENCIA',
-      items: dto.items.map((item) => ({
+      items: dto.items.map((item) => ({ 
         ...item,
         type: 'INGRESO',
       })),
@@ -71,7 +69,7 @@ export class InventoryCommandService implements IInventoryMovementCommandPort {
     return await this.dataSource.transaction(async (manager) => {
       const stocksSede = await manager.find(StockOrmEntity, {
         where: { id_sede: dto.idSede },
-        relations: ['product'],
+        relations: ['producto'],
       });
 
       const nuevoConteo = manager.create(ConteoInventarioOrmEntity, {
@@ -115,27 +113,45 @@ export class InventoryCommandService implements IInventoryMovementCommandPort {
       if (conteo.estado === ConteoEstado.AJUSTADO)
         throw new Error('Este conteo ya fue ajustado anteriormente');
 
-      if (dto.estado === 'AJUSTADO') {
+      if (dto.estado === ConteoEstado.AJUSTADO) {
+        if (!dto.data || dto.data.length === 0) {
+          throw new Error(
+            'Debe enviar el arreglo de productos contados (data).',
+          );
+        }
+
+        const conteoFisicoMap = new Map(
+          dto.data.map((item) => [item.id_detalle, item.stock_conteo]),
+        );
+
         for (const det of conteo.detalles) {
-          const diff = Number(det.stockConteo) - Number(det.stockSistema);
+          const stockIngresado = conteoFisicoMap.get(det.idDetalle);
 
-          if (diff !== 0) {
-            const tipoMov = diff > 0 ? 501 : 502;
+          if (stockIngresado !== undefined) {
+            det.stockConteo = stockIngresado;
+            const diff = Number(det.stockConteo) - Number(det.stockSistema);
+            det.diferencia = diff;
 
-            const movimiento = manager.create(InventoryMovementOrmEntity, {
-              idProducto: det.idProducto,
-              idSede: det.idSedeRef,
-              idAlmacen: det.idAlmacen,
-              quantity: Math.abs(diff),
-              typeMovement: tipoMov,
-              userRef: conteo.usuarioCreacionRef,
-              date: new Date(),
-            });
-            await manager.save(movimiento);
+            await manager.save(det);
 
-            await manager.update(StockOrmEntity, det.idStock, {
-              cantidad: det.stockConteo,
-            });
+            if (diff !== 0) {
+              const tipoMov = diff > 0 ? 501 : 502;
+
+              const movimiento = manager.create(InventoryMovementOrmEntity, {
+                idProducto: det.idProducto,
+                idSede: det.idSedeRef,
+                idAlmacen: det.idAlmacen,
+                quantity: Math.abs(diff),
+                typeMovement: tipoMov,
+                userRef: conteo.usuarioCreacionRef,
+                date: new Date(),
+              });
+              await manager.save(movimiento);
+
+              await manager.update(StockOrmEntity, det.idStock, {
+                cantidad: det.stockConteo,
+              });
+            }
           }
         }
         conteo.estado = ConteoEstado.AJUSTADO;
@@ -144,12 +160,13 @@ export class InventoryCommandService implements IInventoryMovementCommandPort {
       }
 
       conteo.fechaFin = new Date();
-      conteo.totalDiferencias = dto.totalDiferencias || 0;
-      conteo.totalItems = dto.totalItems || conteo.detalles.length;
+      conteo.totalDiferencias = dto.total_diferencias || 0;
+      conteo.totalItems = dto.total_items || conteo.detalles.length;
 
       return await manager.save(conteo);
     });
   }
+
   async registrarConteoFisico(
     idDetalle: number,
     dto: ActualizarDetalleConteoDto,

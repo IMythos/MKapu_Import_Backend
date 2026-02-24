@@ -5,6 +5,7 @@ import { InventoryMapper } from '../mapper/inventory.mapper';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConteoInventarioOrmEntity } from '../../infrastructure/entity/inventory-count-orm.entity';
+import { ListInventoryCountFilterDto } from '../dto/in/list-inventory-count-filter.dto';
 
 @Injectable()
 export class InventoryQueryService {
@@ -47,10 +48,27 @@ export class InventoryQueryService {
     return data;
   }
 
-  async listarConteosPorSede(idSede: string) {
-    return await this.conteoRepo.find({
-      where: { codSede: idSede },
-      order: { fechaIni: 'DESC' },
-    });
+  async listarConteosPorSede(filtros: ListInventoryCountFilterDto) {
+    const query = this.conteoRepo.createQueryBuilder('conteo');
+
+    query.where('conteo.codSede = :idSede', { idSede: filtros.id_sede });
+
+    if (filtros.fecha_inicio) {
+      query.andWhere('DATE(conteo.fechaIni) >= :inicio', {
+        inicio: filtros.fecha_inicio,
+      });
+    }
+
+    if (filtros.fecha_fin) {
+      query.andWhere('DATE(conteo.fechaIni) <= :fin', {
+        fin: filtros.fecha_fin,
+      });
+    }
+
+    query.orderBy('conteo.fechaIni', 'DESC');
+
+    const data = await query.getMany();
+
+    return { status: 200, data };
   }
 }
