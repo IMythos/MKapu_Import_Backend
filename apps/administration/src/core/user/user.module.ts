@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
+import { ConfigModule } from '@nestjs/config';
 // Infrastructure
 import { UserOrmEntity } from './infrastructure/entity/user-orm.entity';
 
@@ -15,7 +15,7 @@ import { UserRepository } from './infrastructure/adapters/out/repository/user.re
 import { UserWebSocketGateway } from './infrastructure/adapters/out/user-websocket.gateway';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserOrmEntity])],
+  imports: [ConfigModule, TypeOrmModule.forFeature([UserOrmEntity])],
   controllers: [UserRestController], 
   providers: [
     UserWebSocketGateway,
