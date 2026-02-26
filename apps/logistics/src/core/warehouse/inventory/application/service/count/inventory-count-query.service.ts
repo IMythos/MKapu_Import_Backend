@@ -1,47 +1,27 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/prefer-promise-reject-errors */
-/* eslint-disable @typescript-eslint/no-require-imports */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { IInventoryRepositoryPort } from '../../domain/ports/out/inventory-movement-ports-out';
-import { StockResponseDto } from '../dto/out/stock-response.dto';
-import { InventoryMapper } from '../mapper/inventory.mapper';
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+import { Inject, Injectable } from '@nestjs/common';
+import { IInventoryCountQueryPort } from '../../../domain/ports/in/inventory-count-ports-in';
+import { ListInventoryCountFilterDto } from '../../dto/in/list-inventory-count-filter.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ConteoInventarioOrmEntity } from '../../infrastructure/entity/inventory-count-orm.entity';
-import { ListInventoryCountFilterDto } from '../dto/in/list-inventory-count-filter.dto';
+import { ConteoInventarioOrmEntity } from '../../../infrastructure/entity/inventory-count-orm.entity';
 import * as ExcelJS from 'exceljs';
-import { IInventoryCountRepository } from '../../domain/ports/out/inventory-count-port-out';
+import { IInventoryCountRepository } from '../../../domain/ports/out/inventory-count-port-out';
 
 @Injectable()
-export class InventoryQueryService {
+export class InventoryCountQueryService implements IInventoryCountQueryPort {
   constructor(
-    @Inject('IInventoryRepositoryPort')
-    private readonly repository: IInventoryRepositoryPort,
     @InjectRepository(ConteoInventarioOrmEntity)
     private readonly conteoRepo: Repository<ConteoInventarioOrmEntity>,
     @Inject('IInventoryCountRepository')
     private readonly countRepository: IInventoryCountRepository,
   ) {}
-
-  async getStock(
-    productId: number,
-    warehouseId: number,
-  ): Promise<StockResponseDto> {
-    const stock = await this.repository.findStock(productId, warehouseId);
-
-    if (!stock) {
-      throw new NotFoundException(
-        `No se encontró stock para el producto ${productId} en el almacén ${warehouseId}`,
-      );
-    }
-
-    return InventoryMapper.toStockResponseDto(stock);
-  }
-
   async obtenerConteoConDetalles(idConteo: number) {
     const data = await this.conteoRepo.findOne({
       where: { idConteo },
@@ -50,17 +30,21 @@ export class InventoryQueryService {
         detalles: { idDetalle: 'ASC' },
       },
     });
-
     if (!data) {
       throw new Error(`No se encontró el conteo con ID ${idConteo}`);
     }
 
     return data;
   }
-
   async listarConteosPorSede(filtros: ListInventoryCountFilterDto) {
     const query = this.conteoRepo.createQueryBuilder('conteo');
 
+    // 1. Cálculos de paginación
+    const page = Number(filtros.page) || 1;
+    const limit = Number(filtros.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // 2. Filtros base
     query.where('conteo.codSede = :idSede', { idSede: filtros.id_sede });
 
     if (filtros.fecha_inicio) {
@@ -68,7 +52,6 @@ export class InventoryQueryService {
         inicio: filtros.fecha_inicio,
       });
     }
-
     if (filtros.fecha_fin) {
       query.andWhere('DATE(conteo.fechaIni) <= :fin', {
         fin: filtros.fecha_fin,
@@ -76,12 +59,21 @@ export class InventoryQueryService {
     }
 
     query.orderBy('conteo.fechaIni', 'DESC');
+    query.skip(skip).take(limit);
 
-    const data = await query.getMany();
+    const [data, total] = await query.getManyAndCount();
 
-    return { status: 200, data };
+    return {
+      status: 200,
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
-
   async exportarConteoExcel(idConteo: number): Promise<ExcelJS.Buffer> {
     const conteo =
       await this.countRepository.obtenerConteoParaReporte(idConteo);
@@ -159,7 +151,6 @@ export class InventoryQueryService {
 
     return await workbook.xlsx.writeBuffer();
   }
-
   async exportarConteoPdf(idConteo: number): Promise<Buffer> {
     const conteo =
       await this.countRepository.obtenerConteoParaReporte(idConteo);
