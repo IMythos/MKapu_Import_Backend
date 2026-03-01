@@ -32,7 +32,6 @@ export class DispatchRestController {
   async create(@Body() dto: CreateDispatchDto): Promise<DispatchDtoOut> {
     return await this.commandService.createDispatch(dto);
   }
-
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,

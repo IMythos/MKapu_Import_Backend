@@ -16,7 +16,6 @@ import { DocumentTypeOrmEntity } from '../../infrastructure/entity/document-type
 import { v4 as uuidv4 } from 'uuid';
 
 export class CustomerMapper {
-  // Domain Entity → Response DTO (Incluye nuevos campos)
   static toResponseDto(customer: Customer): CustomerResponseDto {
     return {
       customerId: customer.id_cliente!,

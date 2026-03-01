@@ -19,7 +19,7 @@ export class SedeTcpController {
     @Inject('IHeadquartersQueryPort')
     private readonly headquartersQueryPort: IHeadquartersQueryPort,
     @InjectRepository(HeadquartersOrmEntity)
-    private readonly sedeRepo: Repository<HeadquartersOrmEntity>
+    private readonly sedeRepo: Repository<HeadquartersOrmEntity>,
   ) {}
 
   @MessagePattern('get_sede_by_id')
@@ -53,6 +53,7 @@ export class SedeTcpController {
       },
     };
   }
+
   @MessagePattern('get_sedes_nombres')
   async getNamesByIds(
     @Payload() ids: number[],
@@ -64,39 +65,46 @@ export class SedeTcpController {
       select: ['id_sede', 'nombre'],
     });
 
-    return sedes.reduce((acc, sede) => {
+    return sedes.reduce<Record<number, string>>((acc, sede) => {
       acc[sede.id_sede] = sede.nombre;
       return acc;
     }, {});
   }
-   @MessagePattern('get_sede_by_id_full')
-async getSedeByIdFull(@Payload() payload: GetSedeByIdPayload) {
-  const idStr = String(payload?.id_sede ?? '').trim();
 
-  this.logger.log(`📡 [TCP] get_sede_by_id_full payload: ${JSON.stringify(payload)}`);
+  @MessagePattern('get_sede_by_id_full')
+  async getSedeByIdFull(@Payload() payload: GetSedeByIdPayload) {
+    const idStr = String(payload?.id_sede ?? '').trim();
 
-  if (!idStr) return { ok: false, message: 'id_sede es obligatorio', data: null };
+    this.logger.log(
+      `📡 [TCP] get_sede_by_id_full payload: ${JSON.stringify(payload)}`,
+    );
 
-  const id = Number(idStr);
-  if (Number.isNaN(id)) return { ok: false, message: 'id_sede debe ser numérico', data: null };
+    if (!idStr) {
+      return { ok: false, message: 'id_sede es obligatorio', data: null };
+    }
 
-  const sedeDto = await this.headquartersQueryPort.getHeadquarterById(id);
+    const id = Number(idStr);
+    if (Number.isNaN(id)) {
+      return { ok: false, message: 'id_sede debe ser numérico', data: null };
+    }
 
-  if (!sedeDto) return { ok: true, data: null };
+    const sedeDto = await this.headquartersQueryPort.getHeadquarterById(id);
 
-  return {
-    ok: true,
-    data: {
-      id_sede: sedeDto.id_sede,
-      nombre: sedeDto.nombre,
-      codigo: sedeDto.codigo,
-      ciudad: sedeDto.ciudad,
-      departamento: sedeDto.departamento,
-      direccion: sedeDto.direccion,
-      telefono: sedeDto.telefono,
-    },
-  };
+    if (!sedeDto) {
+      return { ok: true, data: null };
+    }
+
+    return {
+      ok: true,
+      data: {
+        id_sede: sedeDto.id_sede,
+        nombre: sedeDto.nombre,
+        codigo: sedeDto.codigo,
+        ciudad: sedeDto.ciudad,
+        departamento: sedeDto.departamento,
+        direccion: sedeDto.direccion,
+        telefono: sedeDto.telefono,
+      },
+    };
+  }
 }
-}
-
-
