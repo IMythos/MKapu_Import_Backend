@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Inject, Injectable } from '@nestjs/common';
@@ -9,9 +8,7 @@ import { InventoryMovement } from '../../../../domain/entity/inventory-movement.
 import { Stock } from '../../../../domain/entity/stock-domain-entity';
 import { InventoryMovementOrmEntity } from '../../../entity/inventory-movement-orm.entity';
 import { StockOrmEntity } from '../../../entity/stock-orm-entity';
-import { InventoryMovementResponseDto } from '../../../../application/dto/out/inventory-movement-response.dto';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class InventoryTypeOrmRepository implements IInventoryRepositoryPort {
@@ -66,9 +63,7 @@ export class InventoryTypeOrmRepository implements IInventoryRepositoryPort {
     await this.stockRepo.update(stock.id, { cantidad: stock.quantity });
   }
 
-  async findAllMovements(
-    filters: any,
-  ): Promise<{ data: InventoryMovementResponseDto[]; total: number }> {
+  async findAllMovements(filters: any): Promise<[any[], number]> {
     const query = this.movementRepo
       .createQueryBuilder('mov')
       .leftJoinAndSelect('mov.details', 'det')
@@ -106,120 +101,12 @@ export class InventoryTypeOrmRepository implements IInventoryRepositoryPort {
       });
     }
 
-    const [movements, total] = await query.getManyAndCount();
-    const sedeIds = new Set<number>();
-
-    movements.forEach((mov) => {
-      mov.details.forEach((det) => {
-        const rawId =
-          det.warehouseRelation?.sedeId ??
-          (det.warehouseRelation as any)?.id_sede;
-        if (rawId !== undefined && rawId !== null) {
-          sedeIds.add(Number(rawId));
-        }
+    if (filters.sedeId) {
+      query.andWhere('wh.id_sede = :sedeId', {
+        sedeId: Number(filters.sedeId),
       });
-    });
-
-    let sedeMap: Record<number, string> = {};
-    if (sedeIds.size > 0) {
-      try {
-        sedeMap = await firstValueFrom(
-          this.adminClient.send('get_sedes_nombres', Array.from(sedeIds)),
-        );
-      } catch (error) {
-        console.error('TCP Error:', error.message);
-      }
     }
 
-    const mappedData: InventoryMovementResponseDto[] = movements.map((mov) => {
-      const detalleSalida = mov.details.find((d) => d.type === 'SALIDA');
-      const detalleIngreso = mov.details.find((d) => d.type === 'INGRESO');
-
-      const whSalidaNombre =
-        detalleSalida?.warehouseRelation?.nombre ||
-        (detalleSalida?.warehouseRelation as any)?.descripcion;
-
-      const whIngresoNombre =
-        detalleIngreso?.warehouseRelation?.nombre ||
-        (detalleIngreso?.warehouseRelation as any)?.descripcion;
-
-      let origenNombre = 'N/A';
-      let destinoNombre = 'N/A';
-
-      switch (mov.originType) {
-        case 'TRANSFERENCIA':
-          origenNombre = whSalidaNombre || 'Desconocido';
-          destinoNombre = whIngresoNombre || 'En Tránsito';
-          break;
-        case 'COMPRA':
-          origenNombre = 'Proveedor (Externo)';
-          destinoNombre = whIngresoNombre || 'N/A';
-          break;
-        case 'VENTA':
-          origenNombre = whSalidaNombre || 'N/A';
-          destinoNombre = 'Cliente (Externo)';
-          break;
-        case 'AJUSTE':
-          origenNombre = whSalidaNombre ? whSalidaNombre : 'Ajuste Manual';
-          destinoNombre = whIngresoNombre ? whIngresoNombre : 'Ajuste Manual';
-          break;
-      }
-
-      const idSedeInvolucrada =
-        detalleSalida?.warehouseRelation?.sedeId ??
-        (detalleSalida?.warehouseRelation as any)?.id_sede ??
-        detalleIngreso?.warehouseRelation?.sedeId ??
-        (detalleIngreso?.warehouseRelation as any)?.id_sede;
-
-      const sedeNombre =
-        idSedeInvolucrada !== undefined && idSedeInvolucrada !== null
-          ? sedeMap[idSedeInvolucrada] ||
-            sedeMap[idSedeInvolucrada.toString()] ||
-            'Sede No Encontrada'
-          : 'Sin Sede';
-
-      const detallesUnicos = [];
-      const mapProductos = new Map();
-
-      mov.details.forEach((det) => {
-        const idDelProducto = det.productRelation?.id_producto || det.productId;
-
-        if (idDelProducto && !mapProductos.has(idDelProducto)) {
-          mapProductos.set(idDelProducto, true);
-
-          detallesUnicos.push({
-            id: det.id,
-            productoId: idDelProducto,
-            codigo:
-              det.productRelation?.codigo ||
-              (det.productRelation ? 'S/C' : 'ERR_REL'),
-            productoNombre:
-              det.productRelation?.descripcion ||
-              det.productRelation?.codigo ||
-              `ID: ${idDelProducto}`,
-            cantidad: det.quantity,
-            unidadMedida: det.productRelation?.uni_med || 'UND',
-            tipoOperacionItem: det.type,
-          });
-        }
-      });
-
-      return {
-        id: mov.id,
-        tipoMovimiento: mov.originType,
-        fechaMovimiento: mov.date,
-        motivo: mov.observation || 'Sin observación',
-        documentoReferencia: mov.refTable
-          ? `${mov.refTable} #${mov.refId}`
-          : 'N/A',
-        usuario: 'Sistema',
-        almacenOrigenNombre: origenNombre,
-        almacenDestinoNombre: destinoNombre,
-        sedeNombre: sedeNombre,
-        detalles: detallesUnicos,
-      };
-    });
-
-    return { data: mappedData, total };
+    return await query.getManyAndCount();
   }
 }

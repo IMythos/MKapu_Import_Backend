@@ -51,8 +51,9 @@ export class InventoryMovementRestController {
     @Query('tipoId') tipoId?: number,
     @Query('fechaInicio') fechaInicio?: string,
     @Query('fechaFin') fechaFin?: string,
+    @Query('sedeId') sedeId?: string,
   ) {
-    const filters = { search, tipoId, fechaInicio, fechaFin };
+    const filters = { search, tipoId, fechaInicio, fechaFin, sedeId };
     return await this.inventoryQueryService.getMovementsHistory(filters);
   }
   @Post('adjustment')
