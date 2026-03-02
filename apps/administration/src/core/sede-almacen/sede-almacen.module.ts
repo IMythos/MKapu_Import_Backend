@@ -9,10 +9,14 @@ import { SedeAlmacenQueryService } from './application/service/sede-almacen-quer
 import { SedeAlmacenRestController } from './infrastructure/adapters/in/controllers/sede-almacen-rest.controller';
 import { AlmacenClientProvider } from './infrastructure/adapters/out/TCP/almacen-client.provider';
 import { AlmacenTcpProxy } from './infrastructure/adapters/out/TCP/almacen-tcp.proxy';
+import { HeadquartersOrmEntity } from '../headquarters/infrastructure/entity/headquarters-orm.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([SedeAlmacenOrmEntity]),
+    TypeOrmModule.forFeature([
+      SedeAlmacenOrmEntity,
+      HeadquartersOrmEntity,
+    ]),
     ConfigModule,
     HeadquartersModule,
   ],

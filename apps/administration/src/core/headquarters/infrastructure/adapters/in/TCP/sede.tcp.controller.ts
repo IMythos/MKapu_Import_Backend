@@ -1,7 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { Controller, Inject, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-
+import { SedeAlmacenOrmEntity } from '../../../../../sede-almacen/infrastructure/entity/sede-almacen-orm.entity'; 
 import { IHeadquartersQueryPort } from '../../../../domain/ports/in/headquarters-ports-in';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -20,6 +20,8 @@ export class SedeTcpController {
     private readonly headquartersQueryPort: IHeadquartersQueryPort,
     @InjectRepository(HeadquartersOrmEntity)
     private readonly sedeRepo: Repository<HeadquartersOrmEntity>,
+    @InjectRepository(SedeAlmacenOrmEntity)
+    private readonly sedeAlmacenRepo: Repository<SedeAlmacenOrmEntity>
   ) {}
 
   @MessagePattern('get_sede_by_id')
@@ -69,6 +71,25 @@ export class SedeTcpController {
       acc[sede.id_sede] = sede.nombre;
       return acc;
     }, {});
+  }
+
+  @MessagePattern('get_almacen_by_sede')
+  async getAlmacenBySede(@Payload() id_sede: number) {
+    this.logger.log(`📡 [TCP] get_almacen_by_sede id_sede: ${id_sede}`);
+
+    // Query raw con schema explícito en lugar de usar el repo
+    const rows: { id_almacen_ref: number }[] = await this.sedeAlmacenRepo.query(
+      'SELECT id_almacen_ref FROM dev_mkp_admin.sede_almacen WHERE id_sede = ? LIMIT 1',
+      [id_sede],
+    );
+
+    if (!rows.length || !rows[0].id_almacen_ref) {
+      this.logger.warn(`⚠️ No hay almacén asignado para sede ${id_sede}`);
+      return { id_almacen: null };
+    }
+
+    this.logger.log(`✅ Sede ${id_sede} → Almacén ${rows[0].id_almacen_ref}`);
+    return { id_almacen: rows[0].id_almacen_ref };
   }
 
   @MessagePattern('get_sede_by_id_full')
