@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -48,7 +47,7 @@ export class ReportsTypeOrmRepository implements IReportsRepositoryPort {
         endDate,
       });
 
-    if (filters.idSede) {
+    if (filters.id_sede) {
       query.andWhere('sr.id_sede_ref = :idSede', { idSede: filters.id_sede });
     }
 
