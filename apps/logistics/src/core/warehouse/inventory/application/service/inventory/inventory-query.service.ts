@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -11,8 +12,8 @@ import { IInventoryRepositoryPort } from '../../../domain/ports/out/inventory-mo
 import { StockResponseDto } from '../../dto/out/stock-response.dto';
 import { InventoryMapper } from '../../mapper/inventory.mapper';
 import { InventoryMovementResponseDto } from '../../dto/out/inventory-movement-response.dto';
-// 👇 Importar tu proxy TCP
 import { AdminTcpProxy } from '../../../infrastructure/adapters/out/TCP/admin-tcp.proxy';
+import { IInventoryCountRepository } from '../../../domain/ports/out/inventory-count-port-out';
 
 @Injectable()
 export class InventoryQueryService {
@@ -22,6 +23,8 @@ export class InventoryQueryService {
     @InjectRepository(ConteoInventarioOrmEntity)
     private readonly conteoRepo: Repository<ConteoInventarioOrmEntity>,
     private readonly adminTcpProxy: AdminTcpProxy,
+    @Inject('IInventoryCountRepository')
+    private readonly inventoryCountRepository: IInventoryCountRepository,
   ) {}
 
   async getStock(
@@ -56,25 +59,10 @@ export class InventoryQueryService {
   }
 
   async listarConteosPorSede(filtros: ListInventoryCountFilterDto) {
-    const query = this.conteoRepo.createQueryBuilder('conteo');
+    const sedeParam = filtros.id_sede ? filtros.id_sede.toString() : undefined;
 
-    query.where('conteo.codSede = :idSede', { idSede: filtros.id_sede });
-
-    if (filtros.fecha_inicio) {
-      query.andWhere('DATE(conteo.fechaIni) >= :inicio', {
-        inicio: filtros.fecha_inicio,
-      });
-    }
-
-    if (filtros.fecha_fin) {
-      query.andWhere('DATE(conteo.fechaIni) <= :fin', {
-        fin: filtros.fecha_fin,
-      });
-    }
-
-    query.orderBy('conteo.fechaIni', 'DESC');
-
-    const data = await query.getMany();
+    const data =
+      await this.inventoryCountRepository.listAllHeadersBySede(sedeParam);
 
     return { status: 200, data };
   }
