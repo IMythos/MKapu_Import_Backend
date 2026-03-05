@@ -9,7 +9,6 @@ import { StockOrmEntity } from '../inventory/infrastructure/entity/stock-orm-ent
 import { TransferRestController } from './infrastructure/adapters/in/controllers/transfer-rest.controller';
 import { UnitModule } from '../../catalog/unit/unit.module';
 import { InventoryModule } from '../inventory/inventory.module';
-import { TransferQueryService } from './application/service/transfer-query.service';
 import { StoreOrmEntity } from '../store/infrastructure/entity/store-orm.entity';
 
 @Module({
@@ -27,18 +26,14 @@ import { StoreOrmEntity } from '../store/infrastructure/entity/store-orm.entity'
   providers: [
     TransferWebsocketGateway,
     {
-      provide: 'TransferCommandPortIn',
+      provide: 'TransferPortsIn',
       useClass: TransferCommandService,
-    },
-    {
-      provide: 'TransferQueryPortIn',
-      useClass: TransferQueryService,
     },
     {
       provide: 'TransferPortsOut',
       useClass: TransferRepository,
     },
   ],
-  exports: ['TransferCommandPortIn', 'TransferQueryPortIn'],
+  exports: ['TransferPortsIn' ],
 })
 export class TransferModule {}
