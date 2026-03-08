@@ -62,7 +62,7 @@ export class SalesReceiptMapper {
       dto.total,
       dto.responsibleId,
       dto.branchId,
-      dto.currencyCode  ?? 'PEN',
+      dto.currencyCode ?? 'PEN',
       domainItems,
     );
   }
