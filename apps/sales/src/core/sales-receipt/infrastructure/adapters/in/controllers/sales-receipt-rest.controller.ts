@@ -80,6 +80,9 @@ export class SalesReceiptRestController {
     return this.receiptCommandService.annulReceipt(annulDto);
   }
 
+
+//JUAN DIEGO LUJAN CARRION ALIAS TERRUCO TIRA MISILES [:)]
+
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   async deleteReceipt(
