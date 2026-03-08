@@ -19,7 +19,7 @@ import { RegisterSalesReceiptDto } from '../dto/in';
 import {
   SalesReceiptResponseDto,
   SaleTypeResponseDto,
-  ReceiptTypeResponseDto,       // ← nuevo
+  ReceiptTypeResponseDto, // ← nuevo
 } from '../dto/out';
 import { SalesType } from '../../domain/entity/sale-type-domain-entity';
 import { ReceiptType } from '../../domain/entity/receipt-type-domain-entity';
@@ -48,14 +48,14 @@ export class SalesReceiptMapper {
       nextNumber,
       new Date(),
       dto.dueDate,
-      dto.operationType,
+      dto.operationType ?? '0101',
       dto.subtotal,
       dto.igv,
       dto.isc,
       dto.total,
       dto.responsibleId,
       dto.branchId,
-      dto.currencyCode,
+      dto.currencyCode ?? 'PEN',
       domainItems,
     );
   }
