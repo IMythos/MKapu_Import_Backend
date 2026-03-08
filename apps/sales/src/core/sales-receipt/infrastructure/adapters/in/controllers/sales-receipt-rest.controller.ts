@@ -14,6 +14,7 @@ import {
   Inject,
   ParseIntPipe,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import {
@@ -51,8 +52,6 @@ export class SalesReceiptRestController {
     private readonly currencyRepo: Repository<SunatCurrencyOrmEntity>,
   ) {}
 
-  // ── COMMANDS ──────────────────────────────────────────────────────────────
-
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async registerReceipt(
@@ -74,14 +73,16 @@ export class SalesReceiptRestController {
   @HttpCode(HttpStatus.OK)
   async annulReceipt(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { reason: string },
+    @Body('reason') reason: string, // Extrae la propiedad directamente
   ): Promise<SalesReceiptResponseDto> {
-    const annulDto: AnnulSalesReceiptDto = {
-      receiptId: id,
-      reason: body.reason,
-    };
+    if (!reason) throw new BadRequestException('El motivo es obligatorio');
+
+    const annulDto: AnnulSalesReceiptDto = { receiptId: id, reason };
     return this.receiptCommandService.annulReceipt(annulDto);
   }
+
+
+//JUAN DIEGO LUJAN CARRION ALIAS TERRUCO TIRA MISILES [:)]
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
@@ -163,8 +164,6 @@ export class SalesReceiptRestController {
   ): Promise<SalesReceiptListResponse> {
     return this.receiptQueryService.listReceipts(filters);
   }
-
-  // ── QUERIES DINÁMICAS — CON :id — VAN AL FINAL ───────────────────────────
 
   @Get(':id/detalle')
   async getDetalleCompleto(
