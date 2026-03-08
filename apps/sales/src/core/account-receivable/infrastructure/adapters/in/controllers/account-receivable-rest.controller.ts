@@ -3,8 +3,8 @@ import {
   Param, ParseIntPipe, Patch, Post, Query, Res,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { AccountReceivableCommandService } from '../../../../application/service/account-receivable-command.service';
-import { AccountReceivableQueryService }   from '../../../../application/service/account-receivable-query.service';
+import { AccountReceivableCommandService } from '../../../../application/service/command/account-receivable-command.service';
+import { AccountReceivableQueryService }   from '../../../../application/service/query/account-receivable-query.service';
 import { AccountReceivableMapper }         from '../../../../application/mapper/account-receivable.mapper';
 import {
   CreateAccountReceivableDto, ApplyPaymentDto,
