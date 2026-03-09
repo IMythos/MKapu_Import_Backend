@@ -24,6 +24,8 @@ import { SalesType } from '../../domain/entity/sale-type-domain-entity';
 import { ReceiptType } from '../../domain/entity/receipt-type-domain-entity';
 
 export class SalesReceiptMapper {
+
+
   static fromRegisterDto(
     dto: RegisterSalesReceiptDto,
     nextNumber: number,
@@ -67,6 +69,9 @@ export class SalesReceiptMapper {
     );
   }
 
+
+
+  
   static toDomain(orm: SalesReceiptOrmEntity): SalesReceipt {
     return SalesReceipt.create({
       id_comprobante: orm.id_comprobante,
