@@ -28,7 +28,7 @@ export class WarehouseReportsController {
     private readonly detRepo: Repository<InventoryMovementDetailOrmEntity>,
   ) {}
 
-  // ── GET /warehouse/reports/kpis ──────────────────────────────────
+// ── GET /warehouse/reports/kpis ──────────────────────────────────
 // warehouse-reports.controller.ts
 @Get('kpis')
 async getKpis(@Query() filters: WarehouseReportsFilterDto) {
