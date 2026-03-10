@@ -28,7 +28,6 @@ async function bootstrap() {
   const logisticsUrl =
     process.env.LOGISTICS_SERVICE_URL ?? 'http://localhost:3005';
 
-  // ── HTTP proxies (sin ws:true para evitar conflicto) ──
   app.use(
     '/auth',
     createProxyMiddleware({
@@ -67,9 +66,9 @@ async function bootstrap() {
 
   const wsProxy = httpProxy.createProxyServer({ changeOrigin: true });
 
-  wsProxy.on('error', (err, req, socket) => {
+  wsProxy.on('error', (err, _req, socket) => {
     console.error('[WS Error]', err.message);
-    (socket as any).destroy?.();
+    (socket as { destroy?: () => void }).destroy?.();
   });
 
   const wsRoutes: { prefix: string; target: string }[] = [
@@ -79,7 +78,7 @@ async function bootstrap() {
   ];
 
   app.getHttpServer().on('upgrade', (req: any, socket: any, head: any) => {
-    const url: string = req.url ?? '';
+    const url = String(req.url ?? '');
     console.log(`[WS Upgrade] ${url}`);
 
     const route = wsRoutes.find((r) => url.startsWith(r.prefix));
@@ -88,7 +87,6 @@ async function bootstrap() {
       return;
     }
 
-    // Reescribir el path igual que hace pathRewrite
     req.url = url.replace(new RegExp(`^${route.prefix}`), '') || '/';
 
     wsProxy.ws(req, socket, head, { target: route.target }, (err) => {
@@ -98,6 +96,7 @@ async function bootstrap() {
   });
 
   await app.listen(3000);
-  console.log('🌍 API Gateway corriendo en http://localhost:3000');
+  console.log('API Gateway corriendo en http://localhost:3000');
 }
-bootstrap();
+
+void bootstrap();
