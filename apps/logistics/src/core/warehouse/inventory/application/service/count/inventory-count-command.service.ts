@@ -36,7 +36,7 @@ export class InventoryCountCommandService implements IInventoryCountCommandPort 
     return await this.dataSource.transaction(async (manager) => {
       const whereClause: any = { id_sede: String(dto.idSede) };
       if (dto.idCategoria) {
-        whereClause.producto = { categoria: dto.idCategoria };
+        whereClause.producto = { categoria: { id_categoria: dto.idCategoria } };
       }
       const stocksSede = await manager.find(StockOrmEntity, {
         where: whereClause,
@@ -57,11 +57,16 @@ export class InventoryCountCommandService implements IInventoryCountCommandPort 
         idCategoria: dto.idCategoria || null,
         nomCategoria: dto.nomCategoria || null,
       });
-      const conteoGuardado = await manager.save(nuevoConteo);
+      const resultHeader = await manager.insert(
+        ConteoInventarioOrmEntity,
+        nuevoConteo,
+      );
+      const idGenerado = resultHeader.identifiers[0].idConteo;
+      nuevoConteo.idConteo = idGenerado;
 
       const detalles = stocksSede.map((s) => {
         return manager.create(ConteoInventarioDetalleOrmEntity, {
-          conteo: conteoGuardado,
+          conteo: nuevoConteo,
           idProducto: s.id_producto,
           codProd: s.producto.codigo,
           descripcion: s.producto.descripcion,
@@ -76,8 +81,10 @@ export class InventoryCountCommandService implements IInventoryCountCommandPort 
           estado: 1,
         });
       });
-      await manager.save(detalles);
-      return { idConteo: conteoGuardado.idConteo };
+
+      await manager.insert(ConteoInventarioDetalleOrmEntity, detalles);
+
+      return { idConteo: idGenerado };
     });
   }
 
