@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -89,8 +88,6 @@ export class InventoryCountCommandService implements IInventoryCountCommandPort 
   }
 
   async endInventoryCount(idConteo: number, dto: FinalizarConteoDto) {
-    let ajustesParaMovimientos = [];
-
     await this.dataSource.transaction(async (manager) => {
       const conteoOrm = await manager.findOne(ConteoInventarioOrmEntity, {
         where: { idConteo },
@@ -112,7 +109,6 @@ export class InventoryCountCommandService implements IInventoryCountCommandPort 
             d.estado,
           ),
       );
-
       const conteoDomain = new InventoryCountDomainEntity(
         conteoOrm.idConteo,
         conteoOrm.codSede,
@@ -127,23 +123,7 @@ export class InventoryCountCommandService implements IInventoryCountCommandPort 
       );
 
       if (dto.estado === ConteoEstado.AJUSTADO) {
-        ajustesParaMovimientos = conteoDomain.finalizarAjuste(dto.data);
-
-        ajustesParaMovimientos = ajustesParaMovimientos.map((ajuste) => {
-          const idBuscado = ajuste.productId || ajuste.idProducto;
-          const detalleOrm = conteoOrm.detalles.find(
-            (d) => d.idProducto === idBuscado,
-          );
-
-          const almacenReal = detalleOrm
-            ? detalleOrm.idAlmacen
-            : dto.data[0]?.warehouseId || Number(conteoOrm.codSede);
-
-          return {
-            ...ajuste,
-            warehouseId: almacenReal,
-          };
-        });
+        conteoDomain.finalizarAjuste(dto.data);
       } else {
         conteoDomain.anularConteo();
       }
@@ -159,10 +139,6 @@ export class InventoryCountCommandService implements IInventoryCountCommandPort 
               estado: detDomain.estado,
             },
           );
-
-          await manager.update(StockOrmEntity, detDomain.idStock, {
-            cantidad: detDomain.stockConteo,
-          });
         }
       }
 
@@ -172,19 +148,11 @@ export class InventoryCountCommandService implements IInventoryCountCommandPort 
       });
     });
 
-    if (ajustesParaMovimientos.length > 0) {
-      console.log(
-        'ENVIANDO AJUSTES AL MODULE DE MOVIMIENTOS:',
-        JSON.stringify(ajustesParaMovimientos, null, 2),
-      );
-      await this.movementCommandPort.applyInventoryAdjustments({
-        refId: idConteo,
-        refTable: 'conteo_inventario',
-        adjustments: ajustesParaMovimientos,
-      });
-    }
-
-    return { success: true, message: 'Conteo finalizado exitosamente' };
+    return {
+      success: true,
+      message:
+        'Conteo finalizado exitosamente. Las diferencias quedan registradas para su posterior ajuste manual.',
+    };
   }
 
   async registerPhysicCount(
