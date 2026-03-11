@@ -12,4 +12,7 @@ export interface ICashboxRepositoryPort {
     totalMonto: number;
     ticketPromedio: number;
   } | null>;
+  getResumenDia(idSede: number): Promise<any>;
+  getHistorialBySede(idSede: number): Promise<any[]>;
+  getResumenDiaByCajaId(idCaja: string): Promise<any>;
 }
