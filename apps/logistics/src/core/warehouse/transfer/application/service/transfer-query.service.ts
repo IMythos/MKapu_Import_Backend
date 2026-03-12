@@ -1,7 +1,7 @@
+/*
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Transfer } from '../../domain/entity/transfer-domain-entity';
 import { TransferPortsOut } from '../../domain/ports/out/transfer-ports-out';
-import { TransferQueryPortIn } from '../../domain/ports/in/transfer-ports-in';
 
 @Injectable()
 export class TransferQueryService implements TransferQueryPortIn {
@@ -28,3 +28,4 @@ export class TransferQueryService implements TransferQueryPortIn {
     return this.transferRepo.findAll();
   }
 }
+*/

@@ -10,17 +10,15 @@ import { SedeAlmacenRestController } from './infrastructure/adapters/in/controll
 import { AlmacenClientProvider } from './infrastructure/adapters/out/TCP/almacen-client.provider';
 import { AlmacenTcpProxy } from './infrastructure/adapters/out/TCP/almacen-tcp.proxy';
 import { HeadquartersOrmEntity } from '../headquarters/infrastructure/entity/headquarters-orm.entity';
+import { SedeAlmacenTcpController } from '../sede-almacen/infrastructure/adapters/in/TCP/sede-almacen-tcp.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      SedeAlmacenOrmEntity,
-      HeadquartersOrmEntity,
-    ]),
+    TypeOrmModule.forFeature([SedeAlmacenOrmEntity, HeadquartersOrmEntity]),
     ConfigModule,
     HeadquartersModule,
   ],
-  controllers: [SedeAlmacenRestController],
+  controllers: [SedeAlmacenRestController, SedeAlmacenTcpController],
   providers: [
     AlmacenClientProvider,
     AlmacenTcpProxy,

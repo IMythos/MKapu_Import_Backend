@@ -9,7 +9,11 @@ import { StockOrmEntity } from '../inventory/infrastructure/entity/stock-orm-ent
 import { TransferRestController } from './infrastructure/adapters/in/controllers/transfer-rest.controller';
 import { UnitModule } from '../../catalog/unit/unit.module';
 import { InventoryModule } from '../inventory/inventory.module';
-import { TransferQueryService } from './application/service/transfer-query.service';
+import { StoreOrmEntity } from '../store/infrastructure/entity/store-orm.entity';
+import { UsersClientProvider } from './infrastructure/adapters/out/TCP/users-client.provider';
+import { UsuarioTcpProxy } from './infrastructure/adapters/out/TCP/usuario-tcp.proxy';
+import { SedeClientProvider } from './infrastructure/adapters/out/TCP/sede-client.provider';
+import { SedeAlmacenTcpProxy } from './infrastructure/adapters/out/TCP/sede-almacen-tcp.proxy';
 
 @Module({
   imports: [
@@ -17,6 +21,7 @@ import { TransferQueryService } from './application/service/transfer-query.servi
       TransferOrmEntity,
       TransferDetailOrmEntity,
       StockOrmEntity,
+      StoreOrmEntity,
     ]),
     UnitModule,
     InventoryModule,
@@ -24,19 +29,19 @@ import { TransferQueryService } from './application/service/transfer-query.servi
   controllers: [TransferRestController],
   providers: [
     TransferWebsocketGateway,
+    UsersClientProvider,
+    UsuarioTcpProxy,
+    SedeClientProvider,
+    SedeAlmacenTcpProxy,
     {
-      provide: 'TransferCommandPortIn',
+      provide: 'TransferPortsIn',
       useClass: TransferCommandService,
-    },
-    {
-      provide: 'TransferQueryPortIn',
-      useClass: TransferQueryService,
     },
     {
       provide: 'TransferPortsOut',
       useClass: TransferRepository,
     },
   ],
-  exports: ['TransferCommandPortIn', 'TransferQueryPortIn'],
+  exports: ['TransferPortsIn' ],
 })
 export class TransferModule {}
