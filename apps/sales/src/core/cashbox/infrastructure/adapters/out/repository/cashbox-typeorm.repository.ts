@@ -14,7 +14,7 @@ export class CashboxTypeOrmRepository implements ICashboxRepositoryPort {
   constructor(
     @InjectRepository(CashboxOrmEntity)
     private readonly repository: Repository<CashboxOrmEntity>,
-  ) {}
+  ) { }
 
   async getHistorialBySede(idSede: number): Promise<any[]> {
     return await this.repository.manager.query(
@@ -382,6 +382,6 @@ export class CashboxTypeOrmRepository implements ICashboxRepositoryPort {
         total,
       })),
     };
- }
+  }
 
 }
