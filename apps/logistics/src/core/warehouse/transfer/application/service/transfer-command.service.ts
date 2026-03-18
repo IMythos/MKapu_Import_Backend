@@ -188,7 +188,7 @@ export class TransferCommandService implements TransferPortsIn {
     const realtimePayload =
       await this.buildRealtimeTransferPayload(savedTransfer);
     this.transferGateway.notifyNewRequest(
-      dto.destinationHeadquartersId,
+      dto.originHeadquartersId,
       realtimePayload,
     );
 
@@ -1490,7 +1490,7 @@ export class TransferCommandService implements TransferPortsIn {
 
     if (
       transfer.status === TransferStatus.REQUESTED &&
-      destinationHeadquartersId === normalizedHeadquartersId
+      originHeadquartersId === normalizedHeadquartersId
     ) {
       return true;
     }
@@ -1498,7 +1498,7 @@ export class TransferCommandService implements TransferPortsIn {
     if (
       (transfer.status === TransferStatus.APPROVED ||
         transfer.status === TransferStatus.REJECTED) &&
-      originHeadquartersId === normalizedHeadquartersId
+      destinationHeadquartersId === normalizedHeadquartersId
     ) {
       return true;
     }
