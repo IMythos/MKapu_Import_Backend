@@ -1,10 +1,5 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  OneToMany,
-} from 'typeorm';
+// infrastructure/entity/auction-orm.entity.ts
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { AuctionDetailOrmEntity } from './auction-detail.orm.entity';
 
 @Entity('remate')
@@ -17,15 +12,6 @@ export class AuctionOrmEntity {
 
   @Column({ name: 'descripcion', type: 'varchar', length: 150 })
   descripcion!: string;
-
-  @CreateDateColumn({
-    name: 'fec_inicio',
-    type: 'datetime',
-  })
-  fec_inicio: Date;
-
-  @Column({ name: 'fec_fin', type: 'datetime' })
-  fec_fin: Date;
 
   @Column({
     name: 'estado',

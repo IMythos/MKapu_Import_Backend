@@ -17,6 +17,7 @@ import { AuctionQueryService } from '../../../../application/service/auction-que
 import { CreateAuctionDto } from '../../../../application/dto/in/create-auction.dto';
 import { ListAuctionFilterDto } from '../../../../application/dto/in/list-auction-filter.dto';
 import { AuctionResponseDto } from '../../../../application/dto/out/auction-response.dto';
+import { UpdateAuctionDto } from '../../../../application/dto/in/update-auction.dto';
 
 @Controller('auctions')
 export class AuctionController {
@@ -64,13 +65,13 @@ export class AuctionController {
 
   /**
    * Update auction
-   */
+    */
   @Put(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: CreateAuctionDto,
+    @Body() dto: UpdateAuctionDto,
   ): Promise<AuctionResponseDto> {
-    return this.commandService.update(id, dto);
+    return this.commandService.update(id, dto as any);
   }
 
   /**
