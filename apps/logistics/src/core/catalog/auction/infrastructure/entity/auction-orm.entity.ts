@@ -16,10 +16,10 @@ export class AuctionOrmEntity {
   @Column({
     name: 'estado',
     type: 'enum',
-    enum: ['ACTIVO', 'FINALIZADO'],
+    enum: ['ACTIVO', 'FINALIZADO', 'CANCELADO'],
     default: 'ACTIVO',
   })
-  estado!: 'ACTIVO' | 'FINALIZADO';
+  estado!: 'ACTIVO' | 'FINALIZADO' | 'CANCELADO';
 
   @OneToMany(() => AuctionDetailOrmEntity, (d) => d.remate, {
     cascade: true,

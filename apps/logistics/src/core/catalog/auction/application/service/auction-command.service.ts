@@ -2,7 +2,7 @@ import { Injectable, Inject, BadRequestException, Logger, InternalServerErrorExc
 import { IAuctionCommandPort } from '../../domain/port/in/auction.port.in';
 import { IAuctionRepositoryPort } from '../../domain/port/out/auction.port.out';
 import { CreateAuctionDto } from '../dto/in/create-auction.dto';
-import { Auction } from '../../domain/entity/auction-domain-entity';
+import { Auction, AuctionStatus } from '../../domain/entity/auction-domain-entity';
 import { AuctionMapper } from '../mapper/auction.mapper';
 import { AuctionResponseDto } from '../dto/out/auction-response.dto';
 import { InventoryCommandService } from '../../../../warehouse/inventory/application/service/inventory/inventory-command.service';
@@ -42,7 +42,6 @@ export class AuctionCommandService implements IAuctionCommandPort {
     const temporaryCode = shouldGenerateCode ? 'TEMP-PENDING' : dto.cod_remate!;
     this.logger.log(`Creando remate con código: ${shouldGenerateCode ? 'AUTO-GENERADO' : temporaryCode}`);
 
-    // Constructor: (code, description, status?, id?, details?)
     const domain = new Auction(
       temporaryCode,
       dto.descripcion,
@@ -77,9 +76,9 @@ export class AuctionCommandService implements IAuctionCommandPort {
     }
 
     const exitPayload: MovementRequest = {
-      originType: 'AJUSTE' as MovementRequest['originType'],
-      refId:      saved.id!,
-      refTable:   'remate',
+      originType:  'AJUSTE' as MovementRequest['originType'],
+      refId:       saved.id!,
+      refTable:    'remate',
       observation: `Remate registrado: ${finalCode}`,
       items: dto.detalles.map((d) => ({
         productId:   d.id_producto,
@@ -133,11 +132,73 @@ export class AuctionCommandService implements IAuctionCommandPort {
     return AuctionMapper.toResponseDto(saved);
   }
 
+  // ── Finalizar: el remate terminó, no hay más productos disponibles ────────
   async finalize(id: number): Promise<AuctionResponseDto> {
     const existing = await this.repository.findById(id);
     if (!existing) throw new BadRequestException('Subasta no encontrada.');
+
+    if (existing.status === AuctionStatus.CANCELADO) {
+      throw new BadRequestException('No se puede finalizar un remate cancelado.');
+    }
+    if (existing.status === AuctionStatus.FINALIZADO) {
+      throw new BadRequestException('El remate ya está finalizado.');
+    }
+
     existing.finalize();
     const saved = await this.repository.save(existing);
+    return AuctionMapper.toResponseDto(saved);
+  }
+
+  // ── Cancelar: devuelve el stock al almacén ────────────────────────────────
+  async cancel(id: number): Promise<AuctionResponseDto> {
+    const existing = await this.repository.findById(id);
+    if (!existing) throw new BadRequestException('Subasta no encontrada.');
+
+    if (existing.status === AuctionStatus.CANCELADO) {
+      throw new BadRequestException('El remate ya está cancelado.');
+    }
+    if (existing.status === AuctionStatus.FINALIZADO) {
+      throw new BadRequestException('No se puede cancelar un remate ya finalizado.');
+    }
+
+    // Cancela en dominio
+    existing.cancel();
+    const saved = await this.repository.save(existing);
+
+    // ── Devuelve el stock al almacén usando registerIncome ────────────────
+    const almacenId = (existing as any).warehouseRefId ?? 0;
+
+    if (almacenId > 0) {
+      const entryPayload: MovementRequest = {
+        originType:  'AJUSTE' as MovementRequest['originType'],
+        refId:       saved.id!,
+        refTable:    'remate',
+        observation: `Cancelación de remate: ${saved.code} — stock devuelto`,
+        items: existing.details.map(d => ({
+          productId:   d.productId,
+          warehouseId: almacenId,
+          sedeId:      0,
+          quantity:    d.auctionStock,
+        })),
+      };
+
+      try {
+        await this.inventoryService.registerIncome(entryPayload);
+        this.logger.log(`Stock devuelto al almacén ${almacenId} por cancelación de remate ${saved.code}`);
+      } catch (err) {
+        // Si falla la devolución, revertir el estado a ACTIVO
+        this.logger.error(`Error devolviendo stock en cancelación de remate id=${id}`, err);
+        existing.status = AuctionStatus.ACTIVO;
+        await this.repository.save(existing);
+        throw new InternalServerErrorException(
+          'No se pudo devolver el stock al almacén. El remate permanece ACTIVO.'
+        );
+      }
+    } else {
+      // Si no hay almacén referenciado, solo cancela sin mover stock
+      this.logger.warn(`Remate ${saved.code} cancelado sin devolución de stock (almacén no identificado).`);
+    }
+
     return AuctionMapper.toResponseDto(saved);
   }
 
