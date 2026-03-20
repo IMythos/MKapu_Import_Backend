@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/unbound-method */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
@@ -29,9 +30,8 @@ import { SalesReceiptMapper } from '../mapper/sales-receipt.mapper';
 import { UsersTcpProxy } from '../../infrastructure/adapters/out/TCP/users-tcp.proxy';
 import { SedeTcpProxy } from '../../infrastructure/adapters/out/TCP/sede-tcp.proxy';
 import { LogisticsTcpProxy } from '../../infrastructure/adapters/out/TCP/logistics-tcp.proxy';
+import { EmpresaTcpProxy } from '../../infrastructure/adapters/out/TCP/empresa-tcp.proxy';
 import { buildSalesReceiptThermalPdf } from '../../utils/sales-receipt-thermal.util';
-import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
@@ -45,24 +45,8 @@ export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
     private readonly usersTcpProxy: UsersTcpProxy,
     private readonly sedeTcpProxy: SedeTcpProxy,
     private readonly logisticsTcpProxy: LogisticsTcpProxy,
-    @Inject('ADMIN_SERVICE') private readonly adminClient: ClientProxy,
+    private readonly empresaTcpProxy: EmpresaTcpProxy, // <-- Proxy inyectado correctamente
   ) {}
-
-  // ── OBTENER EMPRESA TCP ──────────────────────────────────────────────────
-  private async getEmpresaData(): Promise<any> {
-    try {
-      const response = await firstValueFrom(
-        this.adminClient.send('get_empresa_activa', {}),
-      );
-      return response?.data ? response.data : response;
-    } catch (error) {
-      console.warn(
-        '⚠️ No se pudo obtener la empresa por TCP en ventas:',
-        error.message,
-      );
-      return null;
-    }
-  }
 
   async findSaleByCorrelativo(correlativo: string): Promise<any> {
     const parts = correlativo.split('-');
@@ -257,7 +241,7 @@ export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
   async getDetalleCompleto(
     id_comprobante: number,
     historialPage: number = 1,
-  ): Promise<SalesReceiptDetalleCompletoDto | null> {
+  ): Promise<SalesReceiptDetalleCompletoDto | null | any> {
     const HISTORIAL_LIMIT = 5;
 
     const raw = await this.receiptRepository.findDetalleCompleto(
@@ -303,7 +287,7 @@ export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
 
     const idSede = Number(comprobante.id_sede);
 
-    const [usuarios, sedeInfo, codigoMap] = await Promise.all([
+    const [usuarios, sedeInfo, codigoMap, empresaData] = await Promise.all([
       todosIds.length > 0
         ? this.usersTcpProxy.findByIds(todosIds)
         : Promise.resolve([]),
@@ -311,7 +295,9 @@ export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
       productIds.length > 0
         ? this.logisticsTcpProxy.getProductsCodigoByIds(productIds)
         : Promise.resolve(new Map<number, string>()),
+      this.empresaTcpProxy.getEmpresaActiva(),
     ]);
+    console.log('🔥🔥 DATA EMPRESA RECIBIDA POR TCP:', empresaData);
 
     const usuarioMap = new Map(
       usuarios.map((u) => [u.id_usuario, u.nombreCompleto]),
@@ -425,6 +411,7 @@ export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
         limit: HISTORIAL_LIMIT,
         total_pages: Math.ceil(historialTotal / HISTORIAL_LIMIT),
       },
+      empresa: empresaData, // <-- Inyectamos la empresa para el Frontend
     };
   }
 
@@ -438,15 +425,11 @@ export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
     return types.map(SalesReceiptMapper.toReceiptTypeDto);
   }
 
-  // ── ACTUALIZADO: INCLUYE LA EMPRESA ──────────────────────────────────
   private async buildPdfData(id: number): Promise<any> {
     const detalle = await this.getDetalleCompleto(id);
     if (!detalle)
       throw new NotFoundException(`Comprobante #${id} no encontrado`);
 
-    const empresaData = await this.getEmpresaData(); // <--- TCP CALL
-
-    // Añadimos empresaData al payload para que el Utils lo lea
     return {
       id_comprobante: detalle.id_comprobante,
       serie: detalle.serie,
@@ -493,14 +476,12 @@ export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
           }
         : null,
 
-      empresaData: empresaData, // <--- Inyectado aquí
+      empresaData: detalle.empresa, // <-- Lee la empresa extraída desde getDetalleCompleto
     };
   }
 
-  // ── EXPORTACIÓN TÉRMICA ──────────────────────────────────────────────
   async exportThermalVoucher(id: number, res: Response): Promise<void> {
     const data = await this.buildPdfData(id);
-    // Pasamos la data normal y la data de la empresa extraída al util
     const buffer = await buildSalesReceiptThermalPdf(data, data.empresaData);
 
     res.set({

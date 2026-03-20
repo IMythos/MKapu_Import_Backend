@@ -34,6 +34,7 @@ import { SalesReceiptRestController } from './infrastructure/adapters/in/control
 
 // Promociones viven en el mismo microservicio de sales, no necesitan TCP
 import { PromotionModule } from '../promotion/promotion.module';
+import { EmpresaTcpProxy } from './infrastructure/adapters/out/TCP/empresa-tcp.proxy';
 
 @Module({
   imports: [
@@ -108,6 +109,7 @@ import { PromotionModule } from '../promotion/promotion.module';
     UsersTcpProxy,
     SedeTcpProxy,
     LogisticsTcpProxy,
+    EmpresaTcpProxy,
 
     {
       provide: 'ISalesReceiptCommandPort',

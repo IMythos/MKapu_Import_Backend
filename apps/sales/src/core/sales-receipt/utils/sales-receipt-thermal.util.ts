@@ -248,17 +248,19 @@ export async function buildSalesReceiptThermalPdf(
     y += LOGO_H + 4;
 
     dashedLine();
-
-    // ════════════════════════════════════════════
-    //  EMPRESA
-    // ════════════════════════════════════════════
+    const empData = empresaData || (data as any).empresaData || {};
     const empresa = {
-      nombre: empresaData?.razon_social ?? 'MKAPU IMPORT S.A.C.',
-      ruc: empresaData?.ruc ?? '20000000000',
-      direccion: empresaData?.direccion ?? 'Dirección no registrada',
-      ciudad: empresaData?.ciudad ?? 'Lima - Perú',
-      telefono: empresaData?.telefono ?? '000000000',
-      web: empresaData?.website ?? 'https://fe.tumi-soft.com',
+      // Cambiar razon_social por razonSocial
+      nombre:
+        empData?.razonSocial ??
+        empData?.nombreComercial ??
+        'MKAPU IMPORT S.A.C.',
+      ruc: empData?.ruc ?? '20000000000',
+      direccion: empData?.direccion ?? 'Dirección no registrada',
+      ciudad: empData?.ciudad ?? 'Lima - Perú',
+      telefono: empData?.telefono ?? '000000000',
+      // Cambiar website por sitioWeb
+      web: empData?.sitioWeb ?? 'https://fe.tumi-soft.com',
     };
 
     cline(empresa.nombre, { bold: true, size: 8, gap: 9 });
@@ -509,9 +511,13 @@ export async function buildSalesReceiptThermalPdf(
 }
 
 function buildQrContent(data: SalesReceiptPdfData, empresaData?: any): string {
-  const ruc = empresaData?.ruc ?? '20000000000';
-  const nombreEmpresa = empresaData?.razon_social ?? 'MKAPU IMPORT S.A.C.';
+  const empData = empresaData || (data as any).empresaData || {};
+  const ruc = empData?.ruc ?? '20000000000';
+  // Cambiar razon_social por razonSocial
+  const nombreEmpresa =
+    empData?.razonSocial ?? empData?.nombreComercial ?? 'MKAPU IMPORT S.A.C.';
   const numero = String(data.numero).padStart(8, '0');
+
   return [
     `EMPRESA: ${nombreEmpresa}`,
     `RUC: ${ruc}`,

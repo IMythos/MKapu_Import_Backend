@@ -170,9 +170,11 @@ export interface SalesReceiptPdfData {
 
 // ── QR content ───────────────────────────────────────────────────────
 function buildQrContent(data: SalesReceiptPdfData): string {
-  // Ahora usamos data.empresaData
-  const ruc = data.empresaData?.ruc ?? '20000000000';
-  const nombreEmpresa = data.empresaData?.razon_social ?? 'MKAPU IMPORT S.A.C.';
+  const empData = data.empresaData || {};
+  const ruc = empData.ruc ?? '20000000000';
+  // Actualizado para usar las propiedades camelCase de tu DTO
+  const nombreEmpresa =
+    empData.razonSocial ?? empData.nombreComercial ?? 'MKAPU IMPORT S.A.C.';
   const numero = String(data.numero).padStart(8, '0');
 
   return [
@@ -209,14 +211,17 @@ export async function buildSalesReceiptPdf(
   const PDFDocument = require('pdfkit');
   const chunks: Buffer[] = [];
 
-  // Mapeamos los datos de la empresa desde data.empresaData
+  // Mapeamos los datos de la empresa desde data.empresaData asegurando las propiedades correctas
+  const empData = data.empresaData || {};
   const empresa = {
-    nombre: data.empresaData?.razon_social ?? 'MKAPU IMPORT S.A.C.',
-    ruc: data.empresaData?.ruc ?? '20000000000',
-    direccion: data.empresaData?.direccion ?? 'Dirección no registrada',
-    ciudad: data.empresaData?.ciudad ?? 'Lima - Perú',
-    email: data.empresaData?.email ?? 'correo@empresa.com',
-    telefono: data.empresaData?.telefono ?? '000000000',
+    nombre:
+      empData.razonSocial ?? empData.nombreComercial ?? 'MKAPU IMPORT S.A.C.',
+    ruc: empData.ruc ?? '20000000000',
+    direccion: empData.direccion ?? 'Dirección no registrada',
+    ciudad: empData.ciudad ?? 'Lima - Perú',
+    email: empData.email ?? 'correo@empresa.com',
+    telefono: empData.telefono ?? '000000000',
+    web: empData.sitioWeb ?? 'https://fe.tumi-soft.com',
   };
 
   const docRef = `${data.serie}-${String(data.numero).padStart(8, '0')}`;
