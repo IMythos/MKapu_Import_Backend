@@ -26,6 +26,7 @@ import { SedeTcpProxy } from 'apps/logistics/src/core/catalog/product/infrastruc
 import { UsuarioTcpProxy } from 'apps/logistics/src/core/warehouse/transfer/infrastructure/adapters/out/TCP/usuario-tcp.proxy';
 import { join } from 'path/win32';
 import { existsSync } from 'fs';
+import { EmpresaTcpPortOut } from '../../domain/ports/out/empresa-tcp.port';
 
 @Injectable()
 export class RemissionQueryService implements RemissionQueryPortIn {
@@ -37,6 +38,9 @@ export class RemissionQueryService implements RemissionQueryPortIn {
     private readonly salesGateway: SalesGatewayPortOut,
     private readonly sedeClient: SedeTcpProxy,
     private readonly userClient: UsuarioTcpProxy,
+
+    @Inject('EmpresaTcpPortOut')
+    private readonly empresaProxy: EmpresaTcpPortOut,
   ) {}
 
   async executeList(
@@ -193,74 +197,108 @@ export class RemissionQueryService implements RemissionQueryPortIn {
   }
 
   async exportExcel(id: string, res: Response): Promise<void> {
-    const guia = await this.remissionRepository.obtenerGuiaParaReporte(id);
-    if (!guia) throw new NotFoundException('Guía no encontrada');
+    // 1. Obtener la remisión desde el repositorio
+    const domain = await this.remissionRepository.findById(id);
+    if (!domain) {
+      throw new NotFoundException(
+        `Guía de remisión con ID ${id} no encontrada`,
+      );
+    }
+
+    const detalles = domain.getDetalles();
+    let empresaData: any = null;
+
+    try {
+      empresaData = await this.empresaProxy.getEmpresaData();
+    } catch (error) {
+      console.error('Error al obtener datos de la empresa:', error);
+    }
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Guía de Remisión');
 
-    worksheet.mergeCells('A1:F1');
-    const titulo = worksheet.getCell('A1');
-    titulo.value = `GUÍA DE REMISIÓN ELECTRÓNICA - ${guia.serie}-${guia.numero}`;
-    titulo.font = { size: 14, bold: true };
-    titulo.alignment = { horizontal: 'center' };
+    // Estilos generales de columnas
+    worksheet.columns = [
+      { width: 20 },
+      { width: 30 },
+      { width: 15 },
+      { width: 15 },
+      { width: 15 },
+    ];
 
-    worksheet.addRow(['Motivo:', guia.motivo_traslado, 'Estado:', guia.estado]);
+    worksheet.mergeCells('A1:E1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = empresaData?.razon_social || 'REPORTE DE REMISIÓN';
+    titleCell.font = { bold: true, size: 16 };
+    titleCell.alignment = { horizontal: 'center' };
+
+    worksheet.addRow(['RUC Empresa:', empresaData?.ruc || 'N/A']);
+    worksheet.addRow(['Guía de Remisión:', domain.id_guia]);
+    worksheet.addRow(['Fecha de Emisión:', domain.fecha_emision]);
+    worksheet.addRow(['Fecha de Inicio:', domain.fecha_inicio]);
+    worksheet.addRow(['Motivo de Traslado:', domain.motivo_traslado]);
+    worksheet.addRow(['Modalidad:', domain.modalidad]);
     worksheet.addRow([
-      'Fecha Emisión:',
-      guia.fecha_emision,
-      'Inicio Traslado:',
-      guia.fecha_inicio,
+      'Peso Total:',
+      `${domain.peso_total} ${domain.unidad_peso}`,
     ]);
-    worksheet.addRow([
-      'Punto Partida:',
-      guia.transfer?.direccion_origen || '-',
-      'Ubigeo:',
-      guia.transfer?.ubigeo_origen || '-',
-    ]);
-    worksheet.addRow([
-      'Punto Llegada:',
-      guia.transfer?.direccion_destino || '-',
-      'Ubigeo:',
-      guia.transfer?.ubigeo_destino || '-',
-    ]);
-    worksheet.addRow([]);
+
+    // Si la guía está ligada a un comprobante, lo mostramos
+    if (domain.id_comprobante_ref) {
+      worksheet.addRow(['ID Comprobante Ref:', domain.id_comprobante_ref]);
+    }
+
+    worksheet.addRow([]); // Fila vacía para separación
+
+    // 5. Generar la tabla de productos (Detalles)
+    worksheet.addRow(['DETALLE DE PRODUCTOS']).font = { bold: true };
 
     const headerRow = worksheet.addRow([
-      'CÓDIGO',
-      'PRODUCTO',
+      'CÓDIGO PROD.',
+      'ID PRODUCTO',
       'CANTIDAD',
-      'PESO UNIT',
+      'PESO UNIT.',
       'PESO TOTAL',
     ]);
+
+    // Estilos de la cabecera de la tabla
     headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
     headerRow.eachCell((cell) => {
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FF000000' },
+        fgColor: { argb: 'FF4F81BD' }, // Color Azul
       };
+      cell.alignment = { horizontal: 'center' };
     });
 
-    guia.details.forEach((det) => {
-      worksheet.addRow([
-        det.cod_prod,
-        'Producto',
-        det.cantidad,
-        det.peso_unitario,
-        det.peso_total,
-      ]);
-    });
+    // Iterar sobre los detalles extraídos con el método de dominio correcto
+    if (detalles && detalles.length > 0) {
+      detalles.forEach((item) => {
+        worksheet.addRow([
+          item.cod_prod,
+          item.id_producto,
+          item.cantidad,
+          item.peso_unitario,
+          item.peso_total,
+        ]);
+      });
+    } else {
+      worksheet.addRow(['No hay productos registrados en esta guía.']);
+    }
 
-    const buffer = (await workbook.xlsx.writeBuffer()) as unknown as Buffer;
+    // 6. Enviar la respuesta como archivo adjunto
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=Remision_${domain.id_guia}.xlsx`,
+    );
 
-    res.set({
-      'Content-Type':
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename=Guia_${guia.serie}_${guia.numero}.xlsx`,
-      'Content-Length': buffer.byteLength,
-    });
-    res.end(buffer);
+    await workbook.xlsx.write(res);
+    res.end();
   }
 
   async exportPdf(id: string, res: Response): Promise<void> {
@@ -312,10 +350,20 @@ export class RemissionQueryService implements RemissionQueryPortIn {
       }
     }
 
-    const empresaNombre = process.env.COMPANY_NAME || 'MKapu IMPORT S.A.C';
-    const empresaRuc = process.env.COMPANY_RUC || '20000000000';
+    let empresaData: any = null;
+    try {
+      empresaData = await this.empresaProxy.getEmpresaData();
+    } catch (error) {
+      console.warn(
+        'No se pudo obtener la data de la empresa desde Administración:',
+        error,
+      );
+    }
+
+    const empresaNombre = empresaData?.razonSocial || 'MKapu IMPORT S.A.C';
+    const empresaRuc = empresaData?.ruc || '20000000000';
     const empresaDireccionPrincipal =
-      process.env.COMPANY_ADDRESS || 'Direccion Principal S/N';
+      empresaData?.direccion || 'Direccion Principal S/N';
 
     const doc = new PDFDocument({ margin: 10, size: [226, 1000] });
 
@@ -505,14 +553,14 @@ export class RemissionQueryService implements RemissionQueryPortIn {
 
     doc.font('Helvetica').text(`RUC       : ${rucEmpresa}`);
 
-    const nombreEmpresa =
+    const nombreEmpresaTransporte =
       guia.carrier?.razon_social ||
       guia.carrier?.razonSocial ||
       guia.driver?.nombre_completo ||
       guia.driver?.nombreCompleto ||
       'N/A';
 
-    doc.text(`Conductor : ${nombreEmpresa}`);
+    doc.text(`Conductor : ${nombreEmpresaTransporte}`);
     drawSeparator();
 
     doc.font('Helvetica-Bold').fontSize(7);
