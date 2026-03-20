@@ -26,6 +26,7 @@ import { SedeTcpProxy } from 'apps/logistics/src/core/catalog/product/infrastruc
 import { UsuarioTcpProxy } from 'apps/logistics/src/core/warehouse/transfer/infrastructure/adapters/out/TCP/usuario-tcp.proxy';
 import { join } from 'path/win32';
 import { existsSync } from 'fs';
+import { EmpresaTcpPortOut } from '../../domain/ports/out/empresa-tcp.port';
 
 @Injectable()
 export class RemissionQueryService implements RemissionQueryPortIn {
@@ -37,6 +38,9 @@ export class RemissionQueryService implements RemissionQueryPortIn {
     private readonly salesGateway: SalesGatewayPortOut,
     private readonly sedeClient: SedeTcpProxy,
     private readonly userClient: UsuarioTcpProxy,
+
+    @Inject('EmpresaTcpPortOut')
+    private readonly empresaProxy: EmpresaTcpPortOut,
   ) {}
 
   async executeList(
@@ -312,10 +316,23 @@ export class RemissionQueryService implements RemissionQueryPortIn {
       }
     }
 
-    const empresaNombre = process.env.COMPANY_NAME || 'MKapu IMPORT S.A.C';
-    const empresaRuc = process.env.COMPANY_RUC || '20000000000';
+    // 🚀 --- INICIO DE CAMBIO: Consulta de datos de empresa a BD ---
+    let empresaData: any = null;
+    try {
+      empresaData = await this.empresaProxy.getEmpresaData();
+    } catch (error) {
+      console.warn(
+        'No se pudo obtener la data de la empresa desde Administración:',
+        error,
+      );
+    }
+
+    // Asignación con fallback por si Administración no responde
+    const empresaNombre = empresaData?.razonSocial || 'MKapu IMPORT S.A.C';
+    const empresaRuc = empresaData?.ruc || '20000000000';
     const empresaDireccionPrincipal =
-      process.env.COMPANY_ADDRESS || 'Direccion Principal S/N';
+      empresaData?.direccion || 'Direccion Principal S/N';
+    // 🚀 --- FIN DE CAMBIO ---
 
     const doc = new PDFDocument({ margin: 10, size: [226, 1000] });
 
@@ -505,14 +522,14 @@ export class RemissionQueryService implements RemissionQueryPortIn {
 
     doc.font('Helvetica').text(`RUC       : ${rucEmpresa}`);
 
-    const nombreEmpresa =
+    const nombreEmpresaTransporte =
       guia.carrier?.razon_social ||
       guia.carrier?.razonSocial ||
       guia.driver?.nombre_completo ||
       guia.driver?.nombreCompleto ||
       'N/A';
 
-    doc.text(`Conductor : ${nombreEmpresa}`);
+    doc.text(`Conductor : ${nombreEmpresaTransporte}`);
     drawSeparator();
 
     doc.font('Helvetica-Bold').fontSize(7);

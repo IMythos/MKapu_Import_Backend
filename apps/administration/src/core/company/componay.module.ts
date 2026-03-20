@@ -13,17 +13,14 @@ import { CloudinaryService } from './infrastructure/cloudinary/cloudinary.servic
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([EmpresaOrmEntity]),
-    ConfigModule,                   
-],
+  imports: [TypeOrmModule.forFeature([EmpresaOrmEntity]), ConfigModule],
   controllers: [EmpresaController],
   providers: [
     EmpresaGateway,
     CloudinaryService,
-    { provide: EMPRESA_REPOSITORY,      useClass: EmpresaRepository    },
-    { provide: GET_EMPRESA_USE_CASE,    useClass: GetEmpresaService     },
-    { provide: UPDATE_EMPRESA_USE_CASE, useClass: UpdateEmpresaService  },
+    { provide: EMPRESA_REPOSITORY, useClass: EmpresaRepository },
+    { provide: GET_EMPRESA_USE_CASE, useClass: GetEmpresaService },
+    { provide: UPDATE_EMPRESA_USE_CASE, useClass: UpdateEmpresaService },
   ],
   exports: [GET_EMPRESA_USE_CASE],
 })
