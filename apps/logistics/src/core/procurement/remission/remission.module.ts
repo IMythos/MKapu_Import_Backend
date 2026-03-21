@@ -29,6 +29,7 @@ import { ReniecController } from 'apps/sales/src/reniec/reniec.controller';
 import { ReniecService } from 'apps/sales/src/reniec/reniec.service';
 import { UsuarioTcpProxy } from '../../warehouse/transfer/infrastructure/adapters/out/TCP/usuario-tcp.proxy';
 import { SedeTcpProxy } from '../../catalog/product/infrastructure/adapters/out/TCP/sede-tcp.proxy';
+import { EmpresaTcpProxy } from './infrastructure/adapters/out/TCP/empresa-tcp.proxy';
 
 @Module({
   imports: [
@@ -120,6 +121,10 @@ import { SedeTcpProxy } from '../../catalog/product/infrastructure/adapters/out/
     {
       provide: 'RemissionPortOut',
       useClass: RemissionTypeormRepository,
+    },
+    {
+      provide: 'EmpresaTcpPortOut',
+      useClass: EmpresaTcpProxy,
     },
     InventoryRemissionHandler,
     SalesRemissionHandler,
