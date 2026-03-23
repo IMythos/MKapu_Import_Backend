@@ -32,8 +32,9 @@ import { LogisticsTcpProxy } from '../../infrastructure/adapters/out/TCP/logisti
 import { buildSalesReceiptThermalPdf } from '../../utils/sales-receipt-thermal.util';
 import { SalesReceiptPdfData } from '../../utils/sales-receipt-pdf.util';
 import { IGV_DIVISOR } from '../../constants/fiscal.constants';
-import { EmpresaPortOut } from '../../domain/ports/out/empresa-port-out';
 
+import { EmpresaPortOut } from '../../domain/ports/out/empresa-port-out';
+import { Empresa } from 'apps/administration/src/core/company/domain/entity/empresa.entity';
 @Injectable()
 export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
   constructor(
@@ -519,4 +520,9 @@ export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
 
     res.end(buffer);
   }
+
+  async getEmpresa(id: number): Promise<Empresa> {
+    return await this.empresaPort.getEmpresa(id);
+  }
+  
 }

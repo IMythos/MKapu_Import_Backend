@@ -17,6 +17,7 @@ import {
 
 import { KpiFilterParams } from '../out/sales_receipt-ports-out';
 
+import { Empresa } from 'apps/administration/src/core/company/domain/entity/empresa.entity';
 export interface ISalesReceiptCommandPort {
   registerReceipt(
     dto: RegisterSalesReceiptDto,
@@ -52,4 +53,6 @@ export interface ISalesReceiptQueryPort {
 
   getAllSaleTypes(): Promise<SaleTypeResponseDto[]>;
   getAllReceiptTypes(): Promise<ReceiptTypeResponseDto[]>;
+
+  getEmpresa(id: number): Promise<Empresa>;
 }
