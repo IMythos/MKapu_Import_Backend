@@ -14,7 +14,10 @@ import {
 import { ISalesReceiptQueryPort } from '../../domain/ports/in/sales_receipt-ports-in';
 import { ISalesReceiptRepositoryPort } from '../../domain/ports/out/sales_receipt-ports-out';
 import { ICustomerRepositoryPort } from '../../../customer/domain/ports/out/customer-port-out';
-import { ListEmployeeSalesFilterDto, ListSalesReceiptFilterDto } from '../dto/in';
+import {
+  ListEmployeeSalesFilterDto,
+  ListSalesReceiptFilterDto,
+} from '../dto/in';
 import {
   SalesReceiptResponseDto,
   SalesReceiptListResponse,
