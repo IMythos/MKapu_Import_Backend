@@ -27,11 +27,9 @@ import {
 import {
   RegisterSalesReceiptDto,
   AnnulSalesReceiptDto,
-  ListEmployeeSalesFilterDto,
   ListSalesReceiptFilterDto,
 } from '../../../../application/dto/in';
 import {
-  EmployeeSalesListResponseDto,
   SalesReceiptResponseDto,
   SalesReceiptListResponse,
   SalesReceiptDeletedResponseDto,
@@ -385,12 +383,6 @@ export class SalesReceiptRestController {
     return this.receiptQueryService.findSaleByCorrelativo(correlativo);
   }
 
-  @MessagePattern({ cmd: 'find_sales_by_employee' })
-  findSalesByEmployee(
-    @Payload() filters: ListEmployeeSalesFilterDto,
-  ): Promise<EmployeeSalesListResponseDto> {
-    return this.receiptQueryService.listEmployeeSales(filters);
-  }
 
   // ── AGREGAR en sales-receipt-rest.controller.ts ──────────────────────
   // Añade este MessagePattern al final de la clase, junto a los otros TCP

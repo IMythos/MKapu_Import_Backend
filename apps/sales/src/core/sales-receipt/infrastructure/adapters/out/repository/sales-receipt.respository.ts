@@ -641,7 +641,7 @@ export class SalesReceiptRepository implements ISalesReceiptRepositoryPort {
         'r.fec_emision AS fec_emision',
         'r.total AS total',
         'r.estado AS estado',
-        'COALESCE(NULLIF(TRIM(r.nombre_cliente), ""), NULLIF(TRIM(c.razon_social), ""), NULLIF(TRIM(CONCAT(COALESCE(c.nombres, ""), " ", COALESCE(c.apellidos, ""))), ""), "-") AS cliente_nombre',
+        'COALESCE(NULLIF(TRIM(c.razon_social), ""), NULLIF(TRIM(CONCAT(COALESCE(c.nombres, ""), " ", COALESCE(c.apellidos, ""))), ""), "-") AS cliente_nombre',
       ])
       .orderBy('r.fec_emision', 'DESC')
       .addOrderBy('r.id_comprobante', 'DESC')
@@ -801,3 +801,4 @@ export class SalesReceiptRepository implements ISalesReceiptRepositoryPort {
     return SalesReceiptMapper.toDomain(entity);
   }
 }
+
