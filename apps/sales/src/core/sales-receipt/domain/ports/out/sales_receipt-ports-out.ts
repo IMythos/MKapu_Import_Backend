@@ -28,6 +28,16 @@ export interface SalesReceiptSummaryRaw {
   estado: string;
 }
 
+export interface EmployeeSalesRaw {
+  id_comprobante: number;
+  serie: string;
+  numero: number;
+  fec_emision: Date;
+  cliente_nombre: string;
+  total: number;
+  estado: string;
+}
+
 export interface ISalesReceiptRepositoryPort {
   save(receipt: SalesReceipt): Promise<SalesReceipt>;
   update(receipt: SalesReceipt): Promise<SalesReceipt>;
@@ -78,6 +88,16 @@ export interface ISalesReceiptRepositoryPort {
     page: number,
     limit: number,
   ): Promise<[SalesReceiptSummaryRaw[], number]>;
+
+  findEmployeeSalesPaginated(
+    filters: {
+      userId: number;
+      dateFrom?: Date;
+      dateTo?: Date;
+    },
+    page: number,
+    limit: number,
+  ): Promise<[EmployeeSalesRaw[], number]>;
 
   findAllSaleTypes(): Promise<SalesType[]>;
   findAllReceiptTypes(): Promise<ReceiptType[]>;

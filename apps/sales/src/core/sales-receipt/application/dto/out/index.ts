@@ -6,3 +6,4 @@ export * from './sales-receipt-detail.dto';
 export * from './sales-receipt-kpi.dto';
 export * from './sales-receipt-list-response.dto';
 export * from './sales-receipt-summary.dto';
+export * from './employee-sales-list-response.dto';

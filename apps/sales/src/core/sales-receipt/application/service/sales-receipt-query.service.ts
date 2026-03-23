@@ -14,10 +14,11 @@ import {
 import { ISalesReceiptQueryPort } from '../../domain/ports/in/sales_receipt-ports-in';
 import { ISalesReceiptRepositoryPort } from '../../domain/ports/out/sales_receipt-ports-out';
 import { ICustomerRepositoryPort } from '../../../customer/domain/ports/out/customer-port-out';
-import { ListSalesReceiptFilterDto } from '../dto/in';
+import { ListEmployeeSalesFilterDto, ListSalesReceiptFilterDto } from '../dto/in';
 import {
   SalesReceiptResponseDto,
   SalesReceiptListResponse,
+  EmployeeSalesListResponseDto,
   SalesReceiptKpiDto,
   SalesReceiptSummaryListDto,
   SalesReceiptSummaryItemDto,
@@ -146,6 +147,46 @@ export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
     return {
       receipts: receipts.map((r) => SalesReceiptMapper.toResponseDto(r)),
       total: receipts.length,
+    };
+  }
+
+  async listEmployeeSales(
+    filters: ListEmployeeSalesFilterDto,
+  ): Promise<EmployeeSalesListResponseDto> {
+    const page = Math.max(filters.page ?? 1, 1);
+    const limit = Math.min(Math.max(filters.limit ?? 10, 1), 100);
+    const dateFrom = parseDateStart(filters.dateFrom);
+    const dateTo = parseDateEnd(filters.dateTo);
+
+    if (dateFrom && dateTo && dateFrom > dateTo) {
+      throw new BadRequestException(
+        'La fecha de inicio no puede ser mayor que la fecha de fin',
+      );
+    }
+
+    const [rows, totalVentas] =
+      await this.receiptRepository.findEmployeeSalesPaginated(
+        {
+          userId: filters.userId,
+          dateFrom,
+          dateTo,
+        },
+        page,
+        limit,
+      );
+
+    return {
+      ventas: rows.map((row) => ({
+        nroComprobante: `${row.serie}-${String(row.numero).padStart(8, '0')}`,
+        cliente: row.cliente_nombre,
+        fecha: row.fec_emision,
+        total: Number(row.total),
+        estado: row.estado,
+      })),
+      totalVentas,
+      page,
+      limit,
+      totalPages: Math.ceil(totalVentas / limit),
     };
   }
 
@@ -504,4 +545,28 @@ export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
     });
     res.end(buffer);
   }
+}
+
+function parseDateStart(value?: string): Date | undefined {
+  if (!value) return undefined;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException('La fecha de inicio es invalida');
+  }
+
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function parseDateEnd(value?: string): Date | undefined {
+  if (!value) return undefined;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException('La fecha de fin es invalida');
+  }
+
+  date.setHours(23, 59, 59, 999);
+  return date;
 }

@@ -29,9 +29,11 @@ import {
 import {
   RegisterSalesReceiptDto,
   AnnulSalesReceiptDto,
+  ListEmployeeSalesFilterDto,
   ListSalesReceiptFilterDto,
 } from '../../../../application/dto/in';
 import {
+  EmployeeSalesListResponseDto,
   SalesReceiptResponseDto,
   SalesReceiptListResponse,
   SalesReceiptDeletedResponseDto,
@@ -398,5 +400,12 @@ export class SalesReceiptRestController {
   @MessagePattern({ cmd: 'find_sale_by_correlativo' })
   async findSaleByCorrelativo(@Payload() correlativo: string) {
     return await this.receiptQueryService.findSaleByCorrelativo(correlativo);
+  }
+
+  @MessagePattern({ cmd: 'find_sales_by_employee' })
+  findSalesByEmployee(
+    @Payload() filters: ListEmployeeSalesFilterDto,
+  ): Promise<EmployeeSalesListResponseDto> {
+    return this.receiptQueryService.listEmployeeSales(filters);
   }
 }

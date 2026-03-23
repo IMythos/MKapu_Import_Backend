@@ -14,6 +14,7 @@ import {
   Inject,
   Get,
   Query,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
@@ -24,6 +25,7 @@ import { UserWebSocketGateway } from '../../out/user-websocket.gateway';
 import {
   ChangeUserStatusDto,
   ListUserFilterDto,
+  ListUserSalesFilterDto,
   RegisterUserDto,
   UpdateUserDto,
 } from '../../../../application/dto/in';
@@ -31,6 +33,8 @@ import {
   UserDeletedResponseDto,
   UserListResponse,
   UserResponseDto,
+  UserSalesResponseDto,
+  UserWithAccountResponseDto,
 } from '../../../../application/dto/out';
 import { ChangeAccountCredentialsDto } from '../../../../application/dto/in/change-account-credentials-dto';
 import { AccountCredentialsResponseDto } from '../../../../application/dto/out/account-credentials-response.dto';
@@ -45,10 +49,6 @@ export class UserRestController {
     private readonly userCommandService: IUserCommandPort,
     private readonly userGateway: UserWebSocketGateway,
   ) {}
-
-  // ─────────────────────────────────────────
-  // CRUD de Usuario
-  // ─────────────────────────────────────────
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -98,44 +98,45 @@ export class UserRestController {
     return deletedUser;
   }
 
-  // ─────────────────────────────────────────
-  // Queries de Usuario
-  // ─────────────────────────────────────────
-
   @Get()
-  async listUsers(
-    @Query() filters: ListUserFilterDto,
-  ): Promise<UserListResponse> {
+  listUsers(@Query() filters: ListUserFilterDto): Promise<UserListResponse> {
     return this.userQueryService.listUsers(filters);
   }
 
   @Get('all')
-  async getAllUsers(): Promise<UserResponseDto[]> {
+  getAllUsers(): Promise<UserResponseDto[]> {
     return this.userQueryService.getAllUsers();
   }
 
-  @Get(':id')
-  async getUser(
+  @Get(':id/sales')
+  getUserSales(
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<UserResponseDto> {
+    @Query(new ValidationPipe({ transform: true, whitelist: true }))
+    filters: ListUserSalesFilterDto,
+  ): Promise<UserSalesResponseDto> {
+    return this.userQueryService.getUserSales(id, filters);
+  }
+
+  @Get(':id')
+  getUser(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<UserResponseDto | null> {
     return this.userQueryService.getUserById(id);
   }
 
   @Get(':id/full')
-  async getUserWithAccount(@Param('id', ParseIntPipe) id: number) {
+  getUserWithAccount(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<UserWithAccountResponseDto> {
     return this.userQueryService.getUserWithAccount(id);
   }
-
-  // ─────────────────────────────────────────
-  // Credenciales de Cuenta
-  // ─────────────────────────────────────────
 
   @Get(':id/account')
   @ApiOperation({
     summary: 'Obtener datos actuales de la cuenta (nom_usu, email)',
   })
   @HttpCode(HttpStatus.OK)
-  async getAccount(
+  getAccount(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<AccountCredentialsResponseDto> {
     return this.userQueryService.getAccountByUserId(id);
@@ -145,7 +146,7 @@ export class UserRestController {
   @ApiOperation({ summary: 'Cambiar credenciales de cuenta' })
   @ApiBody({ type: ChangeAccountCredentialsDto })
   @HttpCode(HttpStatus.OK)
-  async changeCredentials(
+  changeCredentials(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: Omit<ChangeAccountCredentialsDto, 'id_usuario'>,
   ): Promise<AccountCredentialsResponseDto> {

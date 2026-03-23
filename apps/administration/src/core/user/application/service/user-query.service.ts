@@ -7,13 +7,18 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IUserQueryPort } from '../../domain/ports/in/user-port-in';
 import { IUserRepositoryPort } from '../../domain/ports/out/user-port-out';
-import { ListUserFilterDto } from '../dto/in';
-import { UserResponseDto, UserListResponse } from '../dto/out';
+import { ListUserFilterDto, ListUserSalesFilterDto } from '../dto/in';
+import {
+  UserResponseDto,
+  UserListResponse,
+  UserSalesResponseDto,
+} from '../dto/out';
 import { UserMapper } from '../mapper/user.mapper';
 import { UserWithAccountResponseDto } from '../dto/out/user-with-account-response.dto';
 import { UserSimpleResponseDto } from '../dto/out/user-simple-response.dto';
 import { CuentaUsuarioOrmEntity } from '../../infrastructure/entity/cuenta-usuario-orm.entity';
 import { AccountCredentialsResponseDto } from '../dto/out/account-credentials-response.dto';
+import { SalesTcpProxy } from '../../infrastructure/adapters/out/TCP/sales-tcp.proxy';
 
 @Injectable()
 export class UserQueryService implements IUserQueryPort {
@@ -22,6 +27,7 @@ export class UserQueryService implements IUserQueryPort {
     private readonly repository: IUserRepositoryPort,
     @InjectRepository(CuentaUsuarioOrmEntity)
     private readonly cuentaRepo: Repository<CuentaUsuarioOrmEntity>,
+    private readonly salesTcpProxy: SalesTcpProxy,
   ) {}
 
   async listUsers(filters?: ListUserFilterDto): Promise<UserListResponse> {
@@ -72,13 +78,26 @@ export class UserQueryService implements IUserQueryPort {
     }));
   }
 
-  // ─── Cuenta ───────────────────────────────────────────────────────────────
+  async getUserSales(
+    id: number,
+    filters: ListUserSalesFilterDto,
+  ): Promise<UserSalesResponseDto> {
+    const usuario = await this.repository.findById(id);
+
+    if (!usuario) {
+      throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+    }
+
+    return this.salesTcpProxy.getUserSales(id, filters);
+  }
 
   /**
    * Devuelve los datos actuales de la cuenta (nom_usu, email_emp).
-   * Útil para pre-poblar el formulario de edición de credenciales.
+   * �til para pre-poblar el formulario de edici�n de credenciales.
    */
-  async getAccountByUserId(id_usuario: number): Promise<AccountCredentialsResponseDto> {
+  async getAccountByUserId(
+    id_usuario: number,
+  ): Promise<AccountCredentialsResponseDto> {
     const cuenta = await this.cuentaRepo.findOne({ where: { id_usuario } });
 
     if (!cuenta) {
@@ -88,12 +107,12 @@ export class UserQueryService implements IUserQueryPort {
     }
 
     return {
-      id_cuenta:  cuenta.id_cuenta,
+      id_cuenta: cuenta.id_cuenta,
       id_usuario: cuenta.id_usuario,
-      nom_usu:    cuenta.nom_usu,
-      email_emp:  cuenta.email_emp,
-      updatedAt:  new Date(),
-      message:    'Cuenta encontrada',
+      nom_usu: cuenta.nom_usu,
+      email_emp: cuenta.email_emp,
+      updatedAt: new Date(),
+      message: 'Cuenta encontrada',
     };
   }
 }

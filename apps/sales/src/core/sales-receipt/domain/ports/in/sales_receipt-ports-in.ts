@@ -1,10 +1,12 @@
 import {
   RegisterSalesReceiptDto,
   AnnulSalesReceiptDto,
+  ListEmployeeSalesFilterDto,
   ListSalesReceiptFilterDto,
 } from '../../../application/dto/in';
 
 import {
+  EmployeeSalesListResponseDto,
   SalesReceiptResponseDto,
   SalesReceiptListResponse,
   SalesReceiptDeletedResponseDto,
@@ -50,4 +52,7 @@ export interface ISalesReceiptQueryPort {
 
   getAllSaleTypes(): Promise<SaleTypeResponseDto[]>;
   getAllReceiptTypes(): Promise<ReceiptTypeResponseDto[]>;
+  listEmployeeSales(
+    filters: ListEmployeeSalesFilterDto,
+  ): Promise<EmployeeSalesListResponseDto>;
 }
