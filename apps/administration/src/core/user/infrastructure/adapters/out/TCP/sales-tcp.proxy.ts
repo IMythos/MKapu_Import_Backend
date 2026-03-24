@@ -1,4 +1,4 @@
-﻿import {
+import {
   Inject,
   Injectable,
   Logger,
@@ -8,8 +8,16 @@
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout } from 'rxjs';
-import { ListUserQuotesFilterDto, ListUserSalesFilterDto } from '../../../../application/dto/in';
-import { UserQuotesResponseDto, UserSalesResponseDto } from '../../../../application/dto/out';
+import {
+  ListUserCommissionsFilterDto,
+  ListUserQuotesFilterDto,
+  ListUserSalesFilterDto,
+} from '../../../../application/dto/in';
+import {
+  UserCommissionsResponseDto,
+  UserQuotesResponseDto,
+  UserSalesResponseDto,
+} from '../../../../application/dto/out';
 
 const TCP_TIMEOUT_MS = 5000;
 
@@ -55,7 +63,10 @@ export class SalesTcpProxy implements OnModuleInit, OnModuleDestroy {
     try {
       return await firstValueFrom(
         this.client
-          .send<UserSalesResponseDto>({ cmd: 'find_sales_by_employee' }, payload)
+          .send<UserSalesResponseDto>(
+            { cmd: 'find_sales_by_employee' },
+            payload,
+          )
           .pipe(timeout(TCP_TIMEOUT_MS)),
       );
     } catch (error: unknown) {
@@ -83,7 +94,10 @@ export class SalesTcpProxy implements OnModuleInit, OnModuleDestroy {
     try {
       return await firstValueFrom(
         this.client
-          .send<UserQuotesResponseDto>({ cmd: 'find_quotes_by_employee' }, payload)
+          .send<UserQuotesResponseDto>(
+            { cmd: 'find_quotes_by_employee' },
+            payload,
+          )
           .pipe(timeout(TCP_TIMEOUT_MS)),
       );
     } catch (error: unknown) {
@@ -92,6 +106,37 @@ export class SalesTcpProxy implements OnModuleInit, OnModuleDestroy {
       );
       throw new ServiceUnavailableException(
         'No se pudo consultar las cotizaciones del empleado',
+      );
+    }
+  }
+
+  async getUserCommissions(
+    userId: number,
+    filters: ListUserCommissionsFilterDto,
+  ): Promise<UserCommissionsResponseDto> {
+    const payload = {
+      userId,
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo,
+      page: filters.page ?? 1,
+      limit: filters.limit ?? 10,
+    };
+
+    try {
+      return await firstValueFrom(
+        this.client
+          .send<UserCommissionsResponseDto>(
+            { cmd: 'find_commissions_by_employee' },
+            payload,
+          )
+          .pipe(timeout(TCP_TIMEOUT_MS)),
+      );
+    } catch (error: unknown) {
+      this.logger.warn(
+        `No se pudo consultar comisiones del usuario ${userId}: ${getErrorMessage(error)}`,
+      );
+      throw new ServiceUnavailableException(
+        'No se pudo consultar las comisiones del empleado',
       );
     }
   }

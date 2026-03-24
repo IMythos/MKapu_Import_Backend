@@ -1,4 +1,4 @@
-﻿// administration/src/core/user/infrastructure/adapters/in/controllers/user-rest.controller.ts
+// administration/src/core/user/infrastructure/adapters/in/controllers/user-rest.controller.ts
 
 import {
   Controller,
@@ -26,6 +26,7 @@ import {
   ChangeUserStatusDto,
   ListUserFilterDto,
   ListUserQuotesFilterDto,
+  ListUserCommissionsFilterDto,
   ListUserSalesFilterDto,
   RegisterUserDto,
   UpdateUserDto,
@@ -34,6 +35,7 @@ import {
   UserDeletedResponseDto,
   UserListResponse,
   UserQuotesResponseDto,
+  UserCommissionsResponseDto,
   UserResponseDto,
   UserSalesResponseDto,
   UserWithAccountResponseDto,
@@ -126,6 +128,15 @@ export class UserRestController {
     filters: ListUserQuotesFilterDto,
   ): Promise<UserQuotesResponseDto> {
     return this.userQueryService.getUserQuotes(id, filters);
+  }
+
+  @Get(':id/commissions')
+  getUserCommissions(
+    @Param('id', ParseIntPipe) id: number,
+    @Query(new ValidationPipe({ transform: true, whitelist: true }))
+    filters: ListUserCommissionsFilterDto,
+  ): Promise<UserCommissionsResponseDto> {
+    return this.userQueryService.getUserCommissions(id, filters);
   }
 
   @Get(':id')

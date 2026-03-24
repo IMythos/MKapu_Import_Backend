@@ -2,8 +2,20 @@ import { CommissionReportItem } from '../../../application/dto/out/commision-rep
 import { CommissionRule } from '../../entity/commission-rule.entity';
 import { Commission } from '../../entity/commission-domain-entity';
 import { CommissionReportFlat } from '../../../application/dto/out/commission-report-flat.dto';
+import { EmployeeCommissionsListResponseDto } from '../../../application/dto/out/employee-commissions-list-response.dto';
+import { ListEmployeeCommissionsFilterDto } from '../../../application/dto/in/list-employee-commissions-filter.dto';
 
 export const COMMISSION_REPOSITORY = 'COMMISSION_REPOSITORY';
+
+export interface EmployeeCommissionRaw {
+  id_comision: number;
+  id_comprobante: number;
+  id_sede: number;
+  porcentaje: number;
+  monto: number;
+  estado: string;
+  fecha_registro: Date;
+}
 
 export interface ICommissionRepositoryPortOut {
   // ── Reglas ────────────────────────────────────────────────────────────
@@ -12,6 +24,15 @@ export interface ICommissionRepositoryPortOut {
     from: Date,
     to: Date,
   ): Promise<(Commission & { id_sede: number })[]>;
+  findEmployeeCommissionsPaginated(
+    filters: {
+      userId: number;
+      dateFrom?: Date;
+      dateTo?: Date;
+    },
+    page: number,
+    limit: number,
+  ): Promise<[EmployeeCommissionRaw[], number]>;
   save(rule: CommissionRule): Promise<CommissionRule>;
   findById(id: number): Promise<CommissionRule | null>;
   findAll(activeOnly: boolean): Promise<CommissionRule[]>;
@@ -35,6 +56,9 @@ export interface ICommissionRepositoryPortOut {
 
 export interface IQueryCommissionRepositoryPortOut {
   getAllRules(): Promise<CommissionRule[]>;
+  listEmployeeCommissions(
+    filters: ListEmployeeCommissionsFilterDto,
+  ): Promise<EmployeeCommissionsListResponseDto>;
   getUsageByRule(): Promise<
     { id_regla: number; usos: number; monto_total: number }[]
   >;

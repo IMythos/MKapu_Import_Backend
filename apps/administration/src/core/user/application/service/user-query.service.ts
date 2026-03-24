@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -13,11 +13,13 @@ import { IUserQueryPort } from '../../domain/ports/in/user-port-in';
 import {
   ListUserFilterDto,
   ListUserQuotesFilterDto,
+  ListUserCommissionsFilterDto,
   ListUserSalesFilterDto,
 } from '../dto/in';
 import {
   UserListResponse,
   UserQuotesResponseDto,
+  UserCommissionsResponseDto,
   UserResponseDto,
   UserSalesResponseDto,
 } from '../dto/out';
@@ -102,6 +104,14 @@ export class UserQueryService implements IUserQueryPort {
   ): Promise<UserQuotesResponseDto> {
     await this.getUserOrFail(id);
     return this.salesTcpProxy.getUserQuotes(id, filters);
+  }
+
+  async getUserCommissions(
+    id: number,
+    filters: ListUserCommissionsFilterDto,
+  ): Promise<UserCommissionsResponseDto> {
+    await this.getUserOrFail(id);
+    return this.salesTcpProxy.getUserCommissions(id, filters);
   }
 
   /**

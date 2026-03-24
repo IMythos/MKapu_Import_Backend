@@ -1,4 +1,4 @@
-﻿// administration/src/core/user/domain/ports/in/user-port-in.ts
+// administration/src/core/user/domain/ports/in/user-port-in.ts
 
 import {
   RegisterUserDto,
@@ -7,6 +7,7 @@ import {
   ListUserFilterDto,
   ListUserSalesFilterDto,
   ListUserQuotesFilterDto,
+  ListUserCommissionsFilterDto,
 } from '../../../application/dto/in';
 import { ChangeAccountCredentialsDto } from '../../../application/dto/in/change-account-credentials-dto';
 import {
@@ -15,6 +16,7 @@ import {
   UserDeletedResponseDto,
   UserSalesResponseDto,
   UserQuotesResponseDto,
+  UserCommissionsResponseDto,
 } from '../../../application/dto/out';
 import { AccountCredentialsResponseDto } from '../../../application/dto/out/account-credentials-response.dto';
 import { UserWithAccountResponseDto } from '../../../application/dto/out/user-with-account-response.dto';
@@ -46,5 +48,9 @@ export interface IUserQueryPort {
     id: number,
     filters: ListUserQuotesFilterDto,
   ): Promise<UserQuotesResponseDto>;
+  getUserCommissions(
+    id: number,
+    filters: ListUserCommissionsFilterDto,
+  ): Promise<UserCommissionsResponseDto>;
   getAccountByUserId(id: number): Promise<AccountCredentialsResponseDto>;
 }
