@@ -10,6 +10,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, QueryRunner, Not } from 'typeorm';
 import {
+  EmployeeSalesRaw,
   ISalesReceiptRepositoryPort,
   SalesReceiptKpiRaw,
   SalesReceiptSummaryRaw,
@@ -602,6 +603,62 @@ export class SalesReceiptRepository implements ISalesReceiptRepositoryPort {
     };
   }
 
+  async findEmployeeSalesPaginated(
+    filters: {
+      userId: number;
+      dateFrom?: Date;
+      dateTo?: Date;
+    },
+    page: number,
+    limit: number,
+  ): Promise<[EmployeeSalesRaw[], number]> {
+    const query = this.receiptOrmRepository
+      .createQueryBuilder('r')
+      .leftJoin('r.cliente', 'c')
+      .where('r.id_responsable_ref = :userId', {
+        userId: String(filters.userId),
+      });
+
+    if (filters.dateFrom) {
+      query.andWhere('r.fec_emision >= :dateFrom', {
+        dateFrom: filters.dateFrom,
+      });
+    }
+
+    if (filters.dateTo) {
+      query.andWhere('r.fec_emision <= :dateTo', {
+        dateTo: filters.dateTo,
+      });
+    }
+
+    const total = await query.getCount();
+    const rows = await query
+      .clone()
+      .select([
+        'r.id_comprobante AS id_comprobante',
+        'r.serie AS serie',
+        'r.numero AS numero',
+        'r.fec_emision AS fec_emision',
+        'r.total AS total',
+        'r.estado AS estado',
+        'COALESCE(NULLIF(TRIM(c.razon_social), ""), NULLIF(TRIM(CONCAT(COALESCE(c.nombres, ""), " ", COALESCE(c.apellidos, ""))), ""), "-") AS cliente_nombre',
+      ])
+      .orderBy('r.fec_emision', 'DESC')
+      .addOrderBy('r.id_comprobante', 'DESC')
+      .offset((page - 1) * limit)
+      .limit(limit)
+      .getRawMany<EmployeeSalesRaw>();
+
+    return [
+      rows.map((row) => ({
+        ...row,
+        numero: Number(row.numero),
+        total: Number(row.total),
+      })),
+      total,
+    ];
+  }
+
   async findAllSaleTypes(): Promise<SalesType[]> {
     const rows = await this.salesTypeOrmRepository.find({
       order: { id_tipo_venta: 'ASC' },
@@ -744,3 +801,4 @@ export class SalesReceiptRepository implements ISalesReceiptRepositoryPort {
     return SalesReceiptMapper.toDomain(entity);
   }
 }
+

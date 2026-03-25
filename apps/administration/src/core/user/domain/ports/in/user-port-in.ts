@@ -5,12 +5,18 @@ import {
   UpdateUserDto,
   ChangeUserStatusDto,
   ListUserFilterDto,
+  ListUserSalesFilterDto,
+  ListUserQuotesFilterDto,
+  ListUserCommissionsFilterDto,
 } from '../../../application/dto/in';
 import { ChangeAccountCredentialsDto } from '../../../application/dto/in/change-account-credentials-dto';
 import {
   UserResponseDto,
   UserListResponse,
   UserDeletedResponseDto,
+  UserSalesResponseDto,
+  UserQuotesResponseDto,
+  UserCommissionsResponseDto,
 } from '../../../application/dto/out';
 import { AccountCredentialsResponseDto } from '../../../application/dto/out/account-credentials-response.dto';
 import { UserWithAccountResponseDto } from '../../../application/dto/out/user-with-account-response.dto';
@@ -21,7 +27,9 @@ export interface IUserCommandPort {
   updateUser(dto: UpdateUserDto): Promise<UserResponseDto>;
   changeUserStatus(dto: ChangeUserStatusDto): Promise<UserResponseDto>;
   deleteUser(id: number): Promise<UserDeletedResponseDto>;
-  changeCredentials(dto: ChangeAccountCredentialsDto): Promise<AccountCredentialsResponseDto>; // 👈
+  changeCredentials(
+    dto: ChangeAccountCredentialsDto,
+  ): Promise<AccountCredentialsResponseDto>;
 }
 
 export interface IUserQueryPort {
@@ -32,5 +40,17 @@ export interface IUserQueryPort {
   getUserWithAccount(id: number): Promise<UserWithAccountResponseDto>;
   findByIds(ids: number[]): Promise<UserSimpleResponseDto[]>;
   getAllUsers(): Promise<UserResponseDto[]>;
-  getAccountByUserId(id: number): Promise<AccountCredentialsResponseDto>; // 👈
+  getUserSales(
+    id: number,
+    filters: ListUserSalesFilterDto,
+  ): Promise<UserSalesResponseDto>;
+  getUserQuotes(
+    id: number,
+    filters: ListUserQuotesFilterDto,
+  ): Promise<UserQuotesResponseDto>;
+  getUserCommissions(
+    id: number,
+    filters: ListUserCommissionsFilterDto,
+  ): Promise<UserCommissionsResponseDto>;
+  getAccountByUserId(id: number): Promise<AccountCredentialsResponseDto>;
 }

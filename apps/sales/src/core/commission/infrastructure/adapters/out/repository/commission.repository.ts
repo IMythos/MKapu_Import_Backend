@@ -5,7 +5,10 @@
 
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Injectable } from '@nestjs/common';
-import { ICommissionRepositoryPortOut } from '../../../../domain/ports/out/commission-repository.port';
+import {
+  EmployeeCommissionRaw,
+  ICommissionRepositoryPortOut,
+} from '../../../../domain/ports/out/commission-repository.port';
 import {
   CommissionRule,
   CommissionTargetType,
@@ -205,4 +208,64 @@ export class CommissionRepository implements ICommissionRepositoryPortOut {
       return domain;
     });
   }
+
+  async findEmployeeCommissionsPaginated(
+    filters: {
+      userId: number;
+      dateFrom?: Date;
+      dateTo?: Date;
+    },
+    page: number,
+    limit: number,
+  ): Promise<[EmployeeCommissionRaw[], number]> {
+    const query = this.commissionRepo
+      .createQueryBuilder('c')
+      .leftJoin('comprobante_venta', 'cv', 'cv.id_comprobante = c.id_comprobante')
+      .where('c.id_vendedor_ref = :userId', {
+        userId: String(filters.userId),
+      });
+
+    if (filters.dateFrom) {
+      query.andWhere('c.fecha_registro >= :dateFrom', {
+        dateFrom: filters.dateFrom,
+      });
+    }
+
+    if (filters.dateTo) {
+      query.andWhere('c.fecha_registro <= :dateTo', {
+        dateTo: filters.dateTo,
+      });
+    }
+
+    const total = await query.getCount();
+    const rows = await query
+      .clone()
+      .select([
+        'c.id_comision AS id_comision',
+        'c.id_comprobante AS id_comprobante',
+        'c.porcentaje AS porcentaje',
+        'c.monto AS monto',
+        'c.estado AS estado',
+        'c.fecha_registro AS fecha_registro',
+        'cv.id_sede_ref AS id_sede',
+      ])
+      .orderBy('c.fecha_registro', 'DESC')
+      .addOrderBy('c.id_comision', 'DESC')
+      .offset((page - 1) * limit)
+      .limit(limit)
+      .getRawMany<EmployeeCommissionRaw>();
+
+    return [
+      rows.map((row) => ({
+        ...row,
+        id_comision: Number(row.id_comision),
+        id_comprobante: Number(row.id_comprobante),
+        id_sede: Number(row.id_sede ?? 0),
+        porcentaje: Number(row.porcentaje),
+        monto: Number(row.monto),
+      })),
+      total,
+    ];
+  }
 }
+

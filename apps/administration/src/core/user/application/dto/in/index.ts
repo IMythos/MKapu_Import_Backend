@@ -6,3 +6,6 @@ export * from './register-user-dto';
 export * from './update-user-dto';
 export * from './change-user-status-dto';
 export * from './list-user-filter-dto';
+export * from './list-user-sales-filter.dto';
+export * from './list-user-quotes-filter.dto';
+export * from './list-user-commissions-filter.dto';
