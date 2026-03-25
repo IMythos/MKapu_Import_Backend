@@ -14,10 +14,14 @@ import {
   KpiFilterParams,
 } from '../../domain/ports/out/sales_receipt-ports-out';
 import { ICustomerRepositoryPort } from '../../../customer/domain/ports/out/customer-port-out';
-import { ListSalesReceiptFilterDto } from '../dto/in';
+import {
+  ListEmployeeSalesFilterDto,
+  ListSalesReceiptFilterDto,
+} from '../dto/in';
 import {
   SalesReceiptResponseDto,
   SalesReceiptListResponse,
+  EmployeeSalesListResponseDto,
   SalesReceiptKpiDto,
   SalesReceiptSummaryListDto,
   SalesReceiptSummaryItemDto,
@@ -140,26 +144,59 @@ export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
     };
   }
 
-  async getKpiSemanal(filters: KpiFilterParams): Promise<SalesReceiptKpiDto> {
-    const raw = await this.receiptRepository.getKpiDinamico(filters);
+  async listEmployeeSales(
+    filters: ListEmployeeSalesFilterDto,
+  ): Promise<EmployeeSalesListResponseDto> {
+    const page = Math.max(filters.page ?? 1, 1);
+    const limit = Math.min(Math.max(filters.limit ?? 10, 1), 100);
+    const dateFrom = parseDateStart(filters.dateFrom);
+    const dateTo = parseDateEnd(filters.dateTo);
 
-    let semana_desde: string;
-    let semana_hasta: string;
-
-    if (filters.dateFrom && filters.dateTo) {
-      semana_desde = new Date(filters.dateFrom).toISOString().split('T')[0];
-      semana_hasta = new Date(filters.dateTo).toISOString().split('T')[0];
-    } else if (filters.dateFrom) {
-      semana_desde = new Date(filters.dateFrom).toISOString().split('T')[0];
-      semana_hasta = new Date().toISOString().split('T')[0];
-    } else if (filters.dateTo) {
-      semana_desde = 'inicio';
-      semana_hasta = new Date(filters.dateTo).toISOString().split('T')[0];
-    } else {
-      semana_desde = 'todo';
-      semana_hasta = 'todo';
+    if (dateFrom && dateTo && dateFrom > dateTo) {
+      throw new BadRequestException(
+        'La fecha de inicio no puede ser mayor que la fecha de fin',
+      );
     }
 
+    const [rows, totalVentas] =
+      await this.receiptRepository.findEmployeeSalesPaginated(
+        {
+          userId: filters.userId,
+          dateFrom,
+          dateTo,
+        },
+        page,
+        limit,
+      );
+
+    return {
+      ventas: rows.map((row) => ({
+        nroComprobante: `${row.serie}-${String(row.numero).padStart(8, '0')}`,
+        cliente: row.cliente_nombre,
+        fecha: row.fec_emision,
+        total: Number(row.total),
+        estado: row.estado,
+      })),
+      totalVentas,
+      page,
+      limit,
+      totalPages: Math.ceil(totalVentas / limit),
+    };
+  }
+
+  async getKpiSemanal(sedeId?: number): Promise<SalesReceiptKpiDto> {
+    const raw = await this.receiptRepository.getKpiSemanal(sedeId);
+
+    const ahora = new Date();
+    const diaSemana = ahora.getDay();
+    const diffLunes = diaSemana === 0 ? 6 : diaSemana - 1;
+
+    const lunes = new Date(ahora);
+    lunes.setDate(ahora.getDate() - diffLunes);
+    lunes.setHours(0, 0, 0, 0);
+
+    const domingo = new Date(lunes);
+    domingo.setDate(lunes.getDate() + 6);
     return {
       total_ventas: raw.total_ventas,
       cantidad_ventas: raw.cantidad_ventas,
@@ -454,6 +491,7 @@ export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
       igv: detalle.igv,
       total: detalle.total,
       metodo_pago: detalle.metodo_pago,
+
       cliente: {
         nombre: detalle.cliente.nombre,
         documento: detalle.cliente.documento,
@@ -471,6 +509,7 @@ export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
         const totalConIgv = Number(
           (precioSinIgv * IGV_DIVISOR * p.cantidad).toFixed(2),
         );
+
         return {
           cod_prod: String(p.cod_prod),
           descripcion: p.descripcion,
@@ -502,7 +541,6 @@ export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
   
   async exportThermalVoucher(id: number, res: Response): Promise<void> {
     const data = await this.buildPdfData(id);
-
     const empresaRaw = await this.empresaPort.getEmpresa(id);
 
     // Línea 505: IMPORTANTE usar el Mapper aquí
@@ -525,5 +563,27 @@ export class SalesReceiptQueryService implements ISalesReceiptQueryPort {
   async getEmpresa(id: number): Promise<Empresa> {
     return await this.empresaPort.getEmpresa(id);
   }
-  
+
+function parseDateStart(value?: string): Date | undefined {
+  if (!value) return undefined;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException('La fecha de inicio es invalida');
+  }
+
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function parseDateEnd(value?: string): Date | undefined {
+  if (!value) return undefined;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException('La fecha de fin es invalida');
+  }
+
+  date.setHours(23, 59, 59, 999);
+  return date;
 }

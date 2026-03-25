@@ -440,4 +440,18 @@ export class SalesReceiptRestController {
   async findSaleByCorrelativo(@Payload() correlativo: string) {
     return this.receiptQueryService.findSaleByCorrelativo(correlativo);
   }
+ 
+  @MessagePattern({ cmd: 'get_receipt_detalle' })
+  async getReceiptDetalleTcp(@Payload() id_comprobante: number) {
+    try {
+      const detalle = await this.receiptQueryService.getDetalleCompleto(
+        id_comprobante,
+        1,
+      );
+      if (!detalle) return { success: false, data: null };
+      return { success: true, data: detalle };
+    } catch {
+      return { success: false, data: null };
+    }
+  }
 }

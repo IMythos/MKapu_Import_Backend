@@ -31,6 +31,7 @@ import { CustomerRepository } from '../customer/infrastructure/adapters/out/repo
 
 import { CustomerModule } from '../customer/customer.module';
 import { SalesReceiptRestController } from './infrastructure/adapters/in/controllers/sales-receipt-rest.controller';
+import { SalesReceiptTcpController } from './infrastructure/adapters/in/TCP/sales-receipt-tcp.controller';
 
 // Promociones viven en el mismo microservicio de sales, no necesitan TCP
 import { PromotionModule } from '../promotion/promotion.module';
@@ -100,7 +101,7 @@ import { CommissionModule } from '../commission/commission.module';
     PromotionModule,
   ],
 
-  controllers: [SalesReceiptRestController],
+  controllers: [SalesReceiptRestController, SalesReceiptTcpController],
 
   providers: [
     SalesReceiptCommandService,

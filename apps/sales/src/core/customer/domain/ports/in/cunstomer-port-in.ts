@@ -1,19 +1,16 @@
-
-/* ============================================
-   sales/src/core/customer/domain/ports/in/customer-port-in.ts
-   ============================================ */
-
 import {
-  RegisterCustomerDto,
-  UpdateCustomerDto,
   ChangeCustomerStatusDto,
   ListCustomerFilterDto,
+  ListCustomerTrackingFilterDto,
+  RegisterCustomerDto,
+  UpdateCustomerDto,
 } from '../../../application/dto/in';
-
 import {
-  CustomerResponseDto,
-  CustomerListResponse,
   CustomerDeletedResponseDto,
+  CustomerListResponse,
+  CustomerQuotesResponseDto,
+  CustomerResponseDto,
+  CustomerSalesResponseDto,
   DocumentTypeResponseDto,
 } from '../../../application/dto/out';
 
@@ -29,4 +26,12 @@ export interface ICustomerQueryPort {
   getCustomerById(id: string): Promise<CustomerResponseDto | null>;
   getCustomerByDocument(documentValue: string): Promise<CustomerResponseDto | null>;
   getDocumentTypes(): Promise<DocumentTypeResponseDto[]>;
+  getCustomerSales(
+    id: string,
+    filters: ListCustomerTrackingFilterDto,
+  ): Promise<CustomerSalesResponseDto>;
+  getCustomerQuotes(
+    id: string,
+    filters: ListCustomerTrackingFilterDto,
+  ): Promise<CustomerQuotesResponseDto>;
 }
