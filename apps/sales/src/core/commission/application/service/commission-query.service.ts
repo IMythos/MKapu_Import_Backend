@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+﻿import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import {
   COMMISSION_REPOSITORY,
   ICommissionRepositoryPortOut,
@@ -7,6 +7,8 @@ import {
 import { ISalesReceiptQueryPort } from '../../../sales-receipt/domain/ports/in/sales_receipt-ports-in';
 import { CommissionReportItem } from '../dto/out/commision-report.dto-out';
 import { CommissionReportFlat } from '../dto/out/commission-report-flat.dto';
+import { ListEmployeeCommissionsFilterDto } from '../dto/in/list-employee-commissions-filter.dto';
+import { EmployeeCommissionsListResponseDto } from '../dto/out/employee-commissions-list-response.dto';
 import { ReceiptStatus } from '../../../sales-receipt/domain/entity/sales-receipt-domain-entity';
 import { SalesReceiptResponseDto } from '../../../sales-receipt/application/dto/out/sales-receipt-response.dto';
 import {
@@ -36,8 +38,62 @@ export class CommissionQueryService implements IQueryCommissionRepositoryPortOut
     return this.repository.getUsageByRule();
   }
 
+  async listEmployeeCommissions(
+    filters: ListEmployeeCommissionsFilterDto,
+  ): Promise<EmployeeCommissionsListResponseDto> {
+    const page = Math.max(filters.page ?? 1, 1);
+    const limit = Math.min(Math.max(filters.limit ?? 10, 1), 100);
+    const dateFrom = parseDateStart(filters.dateFrom);
+    const dateTo = parseDateEnd(filters.dateTo);
+
+    if (dateFrom && dateTo && dateFrom > dateTo) {
+      throw new BadRequestException(
+        'La fecha de inicio no puede ser mayor que la fecha de fin',
+      );
+    }
+
+    const [rows, totalComisiones] =
+      await this.repository.findEmployeeCommissionsPaginated(
+        {
+          userId: filters.userId,
+          dateFrom,
+          dateTo,
+        },
+        page,
+        limit,
+      );
+
+    const sedeIds = [...new Set(rows.map((row) => row.id_sede).filter(Boolean))];
+    const sedeNombres: Record<number, string> = {};
+
+    for (const idSede of sedeIds) {
+      try {
+        const sedeData = await this.sedeTcpProxy.getSedeById(idSede);
+        sedeNombres[idSede] = sedeData?.nombre ?? `Sede #${idSede}`;
+      } catch {
+        sedeNombres[idSede] = `Sede #${idSede}`;
+      }
+    }
+
+    return {
+      comisiones: rows.map((row) => ({
+        idComision: row.id_comision,
+        comprobante: `#${row.id_comprobante}`,
+        sede: sedeNombres[row.id_sede] ?? 'Sin sede',
+        monto: row.monto,
+        porcentaje: row.porcentaje,
+        fecha: row.fecha_registro,
+        estado: row.estado,
+      })),
+      totalComisiones,
+      page,
+      limit,
+      totalPages: Math.ceil(totalComisiones / limit),
+    };
+  }
+
   async getReport(from: Date, to: Date): Promise<CommissionReportFlat[]> {
-    // ← usa findByDateRangeWithSede para obtener id_sede en una sola query
+    // â† usa findByDateRangeWithSede para obtener id_sede en una sola query
     const commissions = await this.repository.findByDateRangeWithSede(from, to);
     if (!commissions.length) return [];
 
@@ -55,7 +111,7 @@ export class CommissionQueryService implements IQueryCommissionRepositoryPortOut
       // fallback: muestra ID
     }
 
-    // 2. Nombres de sedes via TCP — una llamada por sede única (no por comprobante)
+    // 2. Nombres de sedes via TCP â€” una llamada por sede Ãºnica (no por comprobante)
     const sedeIds = [...new Set(commissions.map(c => (c as any)._id_sede as number).filter(Boolean))];
     const sedeNombres: Record<number, string> = {};
     for (const idSede of sedeIds) {
@@ -76,7 +132,7 @@ export class CommissionQueryService implements IQueryCommissionRepositoryPortOut
         nombre_vendedor:   nombresMap[c.id_vendedor_ref] ?? `Vendedor #${c.id_vendedor_ref}`,
         id_comprobante:    c.id_comprobante,
         id_sede:           idSede,
-        nombre_sede:       sedeNombres[idSede] ?? '—',
+        nombre_sede:       sedeNombres[idSede] ?? 'â€”',
         porcentaje:        c.porcentaje,
         monto:             c.monto,
         estado:            c.estado,
@@ -152,3 +208,32 @@ export class CommissionQueryService implements IQueryCommissionRepositoryPortOut
     return base * (rule.valor_recompensa / 100);
   }
 }
+
+function parseDateStart(value?: string): Date | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException('Fecha de inicio invalida');
+  }
+
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function parseDateEnd(value?: string): Date | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException('Fecha de fin invalida');
+  }
+
+  date.setHours(23, 59, 59, 999);
+  return date;
+}
+

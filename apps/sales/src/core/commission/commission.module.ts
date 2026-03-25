@@ -2,6 +2,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CommissionController } from './infrastructure/adapters/in/controllers/commission.controller';
+import { CommissionTcpController } from './infrastructure/adapters/in/TCP/commission-tcp.controller';
 import { CommissionCommandService } from './application/service/commission-command.service';
 import { CommissionQueryService } from './application/service/commission-query.service';
 import { CommissionRepository } from './infrastructure/adapters/out/repository/commission.repository';
@@ -18,7 +19,7 @@ import { SalesReceiptModule } from '../sales-receipt/sales-receipt.module';
     ]),
     forwardRef(() => SalesReceiptModule), 
   ],
-  controllers: [CommissionController],
+  controllers: [CommissionController, CommissionTcpController],
   providers: [
     CommissionCommandService,
     CommissionQueryService,
